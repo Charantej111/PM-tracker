@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import AppLayout from "./layouts/AppLayout";
 import ToastViewport from "./components/ToastViewport";
 import { useAppContext } from "./context/AppContext";
+import { useAuth } from "./context/AuthContext";
 import DashboardPage from "./pages/DashboardPage";
 import DailyPlannerPage from "./pages/DailyPlannerPage";
 import LandingPage from "./pages/LandingPage";
@@ -22,13 +23,15 @@ import WeeklyReviewPage from "./pages/WeeklyReviewPage";
 import CalendarPage from "./pages/CalendarPage";
 
 const ProtectedRoute = ({ children }) => {
-  const { currentUser } = useAppContext();
-  return currentUser ? children : <Navigate to="/login" replace />;
+  const { user, loading } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" /></div>;
+  return user ? children : <Navigate to="/login" replace />;
 };
 
 const PublicOnlyRoute = ({ children }) => {
-  const { currentUser } = useAppContext();
-  return currentUser ? <Navigate to="/app/dashboard" replace /> : children;
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  return user ? <Navigate to="/app/dashboard" replace /> : children;
 };
 
 function ScrollToTop() {

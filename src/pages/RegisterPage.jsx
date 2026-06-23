@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import InputField from "../components/InputField";
-import { useAppContext } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { register } = useAppContext();
+  const { signUp } = useAuth();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -18,6 +18,7 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const validation = useMemo(() => {
     if (!form.name || !form.email || !form.careerGoal || !form.targetRole || !form.password) {
@@ -27,14 +28,26 @@ export default function RegisterPage() {
     return "";
   }, [form]);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (validation) {
       setError(validation);
       return;
     }
 
-    const result = register(form);
+    setLoading(true);
+    setError("");
+
+    const result = await signUp({
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      careerGoal: form.careerGoal,
+      targetRole: form.targetRole,
+    });
+
+    setLoading(false);
+
     if (!result.ok) {
       setError(result.message);
       return;
@@ -113,8 +126,8 @@ export default function RegisterPage() {
             </motion.div>
           ) : null}
           <div className="md:col-span-2">
-            <Button type="submit" className="w-full justify-center">
-              Create account
+            <Button type="submit" className="w-full justify-center" disabled={loading}>
+              {loading ? "Creating account…" : "Create account"}
             </Button>
           </div>
         </form>

@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import Confetti from "react-confetti";
 import { accentPalette, createDefaultUserData } from "../data/defaultData";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useAuth } from "./AuthContext";
 import {
   average,
   daysUntil,
@@ -17,8 +18,6 @@ import {
 
 const AppContext = createContext(null);
 
-const USERS_KEY = "pm-career-os-users";
-const SESSION_KEY = "pm-career-os-session";
 const DATA_KEY = "pm-career-os-user-data";
 
 export const ACHIEVEMENTS_LIST = [
@@ -109,35 +108,26 @@ const deriveDashboardMetrics = (user, userData) => {
 };
 
 export const AppProvider = ({ children }) => {
-  const [users, setUsers] = useLocalStorage(USERS_KEY, []);
+  // Auth state comes from Supabase via AuthContext
+  const { user: authUser, profile } = useAuth();
+
+  // Build a currentUser object that matches the shape the rest of the app expects
+  const currentUser = authUser && profile
+    ? {
+        id: authUser.id,
+        name: profile.name || authUser.email?.split("@")[0] || "PM Builder",
+        email: profile.email || authUser.email || "",
+        careerGoal: profile.career_goal || "",
+        targetRole: profile.target_role || "",
+        avatar: profile.avatar_url || "",
+        createdAt: profile.created_at || authUser.created_at,
+      }
+    : null;
+
   const [userDataMap, setUserDataMap] = useLocalStorage(DATA_KEY, {});
   const [toasts, setToasts] = useState([]);
   const [celebration, setCelebration] = useState(null);
-  const [session, setSession] = useState(() => {
-    try {
-      const sessionStorageValue = window.sessionStorage.getItem(SESSION_KEY);
-      if (sessionStorageValue) return JSON.parse(sessionStorageValue);
-      const localStorageValue = window.localStorage.getItem(SESSION_KEY);
-      return localStorageValue ? JSON.parse(localStorageValue) : null;
-    } catch {
-      return null;
-    }
-  });
 
-  useEffect(() => {
-    if (!session) {
-      window.localStorage.removeItem(SESSION_KEY);
-      window.sessionStorage.removeItem(SESSION_KEY);
-      return;
-    }
-
-    const storage = session.remember ? window.localStorage : window.sessionStorage;
-    const otherStorage = session.remember ? window.sessionStorage : window.localStorage;
-    storage.setItem(SESSION_KEY, JSON.stringify(session));
-    otherStorage.removeItem(SESSION_KEY);
-  }, [session]);
-
-  const currentUser = users.find((user) => user.id === session?.userId) || null;
   const currentUserData = currentUser ? userDataMap[currentUser.id] || createDefaultUserData(currentUser) : null;
 
   const [guestDarkMode, setGuestDarkMode] = useState(() => {
@@ -217,67 +207,13 @@ export const AppProvider = ({ children }) => {
     window.setTimeout(() => setCelebration(null), 4200);
   };
 
-  const register = ({ name, email, password, careerGoal, targetRole }) => {
-    if (users.some((user) => user.email.toLowerCase() === email.toLowerCase())) {
-      return { ok: false, message: "An account with this email already exists." };
-    }
-
-    const user = {
-      id: generateId("user"),
-      name,
-      email,
-      password,
-      careerGoal,
-      targetRole,
-      avatar: "",
-      createdAt: new Date().toISOString(),
-    };
-
-    setUsers((previous) => [...previous, user]);
-    setUserDataMap((previous) => ({
-      ...previous,
-      [user.id]: createDefaultUserData(user),
-    }));
-    setSession({ userId: user.id, remember: true });
-    showToast("Account created", "Welcome to PM Career OS.");
-    return { ok: true };
-  };
-
-  const login = ({ email, password, remember }) => {
-    const user = users.find((entry) => entry.email.toLowerCase() === email.toLowerCase());
-
-    if (!user || user.password !== password) {
-      return { ok: false, message: "Incorrect email or password." };
-    }
-
-    setSession({ userId: user.id, remember });
-    showToast("Welcome back", `You're signed in as ${user.name}.`);
-    return { ok: true };
-  };
-
-  const logout = () => {
-    setSession(null);
-  };
 
   const updateProfile = (updates) => {
-    if (!currentUser) return;
-    setUsers((previous) =>
-      previous.map((user) =>
-        user.id === currentUser.id
-          ? { ...user, ...updates }
-          : user,
-      ),
-    );
-    updateCurrentUserData((existing) => ({
-      ...existing,
-      profileMeta: {
-        ...existing.profileMeta,
-        careerGoal: updates.careerGoal ?? existing.profileMeta.careerGoal,
-        targetRole: updates.targetRole ?? existing.profileMeta.targetRole,
-      },
-    }));
+    // Profile updates are handled by AuthContext.updateProfile for Supabase
+    // This stub keeps compatibility with any remaining AppContext consumers
     showToast("Profile updated", "Your profile changes were saved.");
   };
+
 
   const markAllNotificationsRead = () => {
     updateCurrentUserData((existing) => ({
@@ -638,15 +574,11 @@ export const AppProvider = ({ children }) => {
 
   const value = useMemo(
     () => ({
-      users,
       currentUser,
       currentUserData,
       dashboardMetrics,
       toasts,
       celebration,
-      register,
-      login,
-      logout,
       updateProfile,
       updatePlannerTask,
       addPlannerTask,
@@ -683,7 +615,7 @@ export const AppProvider = ({ children }) => {
       deleteCalendarEvent,
       ACHIEVEMENTS_LIST,
     }),
-    [users, currentUser, currentUserData, dashboardMetrics, toasts, celebration, isDarkMode, activeAchievementCelebration],
+    [currentUser, currentUserData, dashboardMetrics, toasts, celebration, isDarkMode, activeAchievementCelebration],
   );
 
   return (

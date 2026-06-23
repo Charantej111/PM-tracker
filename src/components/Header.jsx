@@ -1,10 +1,21 @@
 import { Bell, Flame, LogOut, Menu, Moon, Sun, Target } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 import Button from "./Button";
 
 export default function Header({ onOpenSidebar }) {
-  const { currentUser, currentUserData, dashboardMetrics, logout, getInitials, markAllNotificationsRead, isDarkMode, toggleTheme } =
+  const navigate = useNavigate();
+  const { signOut, profile } = useAuth();
+  const { currentUser, currentUserData, dashboardMetrics, getInitials, markAllNotificationsRead, isDarkMode, toggleTheme } =
     useAppContext();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
+  const avatarUrl = profile?.avatar_url || currentUser?.avatar || null;
 
   return (
     <header className="glass-panel sticky top-4 z-30 mb-6 flex items-center justify-between gap-4 rounded-[28px] px-4 py-4 md:px-6">
@@ -59,8 +70,8 @@ export default function Header({ onOpenSidebar }) {
           ) : null}
         </button>
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 dark:border-white/10 dark:bg-slate-950/70">
-          {currentUser?.avatar ? (
-            <img src={currentUser.avatar} alt={currentUser.name} className="h-10 w-10 rounded-2xl object-cover" />
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={currentUser?.name} className="h-10 w-10 rounded-2xl object-cover" />
           ) : (
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-accent text-sm font-bold text-white">
               {getInitials(currentUser?.name)}
@@ -71,7 +82,7 @@ export default function Header({ onOpenSidebar }) {
             <div className="text-xs text-slate-500 dark:text-slate-400">{currentUser?.targetRole}</div>
           </div>
         </div>
-        <Button variant="ghost" className="hidden lg:inline-flex" onClick={logout}>
+        <Button variant="ghost" className="hidden lg:inline-flex" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           Logout
         </Button>

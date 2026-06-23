@@ -3,17 +3,23 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import InputField from "../components/InputField";
-import { useAppContext } from "../context/AppContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAppContext();
+  const { signIn } = useAuth();
   const [form, setForm] = useState({ email: "", password: "", remember: true });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    const result = login(form);
+    setLoading(true);
+    setError("");
+
+    const result = await signIn({ email: form.email, password: form.password });
+
+    setLoading(false);
 
     if (!result.ok) {
       setError(result.message);
@@ -66,8 +72,8 @@ export default function LoginPage() {
             Remember me
           </label>
           {error ? <p className="text-sm font-medium text-rose-500">{error}</p> : null}
-          <Button type="submit" className="w-full justify-center">
-            Login
+          <Button type="submit" className="w-full justify-center" disabled={loading}>
+            {loading ? "Signing in…" : "Login"}
           </Button>
         </form>
         <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
@@ -80,3 +86,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
