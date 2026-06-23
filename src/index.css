@@ -1,0 +1,96 @@
+@import "react-calendar-heatmap/dist/styles.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: 37 99 235;
+  --accent-soft: 96 165 250;
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-cloud font-sans text-ink antialiased;
+  background-image:
+    radial-gradient(circle at top, rgba(96, 165, 250, 0.22), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,1));
+}
+
+.dark body {
+  background-image:
+    radial-gradient(circle at top, rgba(96, 165, 250, 0.10), transparent 34%),
+    linear-gradient(180deg, rgba(2,6,23,1), rgba(15,23,42,1));
+  @apply bg-slate-950 text-slate-100;
+}
+
+::selection {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+@layer components {
+  .glass-panel {
+    @apply rounded-[28px] border border-white/60 bg-white/85 shadow-panel backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/70;
+  }
+
+  .soft-panel {
+    @apply rounded-3xl border border-slate-200/80 bg-white shadow-soft dark:border-white/10 dark:bg-slate-900;
+  }
+
+  .input-shell {
+    @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-ink outline-none transition duration-200 placeholder:text-slate-400 focus:border-accent/50 focus:ring-4 focus:ring-accent-soft/20 dark:border-white/10 dark:bg-slate-950 dark:text-white;
+  }
+}
+
+.heatmap .react-calendar-heatmap-text {
+  fill: #64748b;
+  font-size: 10px;
+}
+
+.heatmap .color-empty {
+  fill: rgba(226, 232, 240, 0.6);
+}
+
+.dark .heatmap .color-empty {
+  fill: rgba(51, 65, 85, 0.9);
+}
+
+.heatmap .color-scale-1 {
+  fill: rgba(147, 197, 253, 0.55);
+}
+
+.heatmap .color-scale-2 {
+  fill: rgba(96, 165, 250, 0.7);
+}
+
+.heatmap .color-scale-3 {
+  fill: rgba(59, 130, 246, 0.85);
+}
+
+.heatmap .color-scale-4 {
+  fill: rgba(37, 99, 235, 1);
+}
+
+.shimmer {
+  background: linear-gradient(90deg, rgba(226, 232, 240, 0.45) 25%, rgba(248, 250, 252, 0.85) 50%, rgba(226, 232, 240, 0.45) 75%);
+  background-size: 600px 100%;
+}
+
+input[type="checkbox"] {
+  @apply h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent transition duration-150 dark:border-white/10 dark:bg-slate-950 dark:checked:bg-accent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply rounded bg-slate-300/60 dark:bg-slate-700/60 hover:bg-slate-400 dark:hover:bg-slate-600;
+}
