@@ -15,9 +15,9 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
 ## 🚀 Key Features
 
 1. **Authentication & Persistence**
-   - Client-side signup and login with persistence powered by `localStorage`.
-   - Automatic theme detection and settings sync.
-   - Profile-based account data import/export as JSON.
+   - Secure authentication and persistence powered by **Supabase**.
+   - Cloud database synchronization for all learning goals, projects, notes, and skills.
+   - Automatic theme detection and profile settings sync.
 
 2. **Core Dashboard**
    - **Daily Streak Tracker**: Tracks consecutive days studied; starts at `0` and grows dynamically upon daily check-in.
@@ -62,11 +62,11 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
 │   │   └── AnalyticsCharts.jsx # Custom SVG analytics charts
 │   ├── components/             # Reusable UI (Buttons, Cards, PageShell, Inputs, etc.)
 │   ├── context/
-│   │   └── AppContext.jsx      # Global React Context provider & state handlers
+│   │   ├── AppContext.jsx      # Global React Context provider & state handlers
+│   │   └── AuthContext.jsx     # Supabase Authentication context
 │   ├── data/
+│   │   ├── db.js               # Supabase database query methods
 │   │   └── defaultData.js      # Initial user database state schema
-│   ├── hooks/
-│   │   └── useLocalStorage.js  # State sync with browser localStorage
 │   ├── layouts/
 │   │   └── AppLayout.jsx       # Standard dashboard shell (Sidebar, Header, Main Outlet)
 │   ├── pages/                  # All page containers (Dashboard, Projects, Calendar, Notes...)
@@ -85,22 +85,28 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
 Make sure you have [Node.js](https://nodejs.org/) installed.
 
 ### Installation
-Clone the repository and install the dependencies using `pnpm` (or `npm`/`yarn`):
+1. Clone the repository and install the dependencies using `npm` (or `pnpm`/`yarn`):
 ```bash
-pnpm install
+npm install
+```
+
+2. Set up your Supabase environment variables in a `.env` file:
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ### Run Locally (Development)
 Start the local Vite development server:
 ```bash
-pnpm dev
+npm run dev
 ```
 Open your browser and navigate to `http://localhost:5173`.
 
 ### Build for Production
 To build the optimized static asset bundle:
 ```bash
-pnpm build
+npm run build
 ```
 The output files will be built inside the `/dist` directory, ready to be served.
 
