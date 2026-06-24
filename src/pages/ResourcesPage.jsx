@@ -15,6 +15,14 @@ export default function ResourcesPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
 
+  if (!currentUserData) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
+      </div>
+    );
+  }
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newUrl, setNewUrl] = useState("");

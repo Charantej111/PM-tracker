@@ -15,7 +15,11 @@ export default function Header({ onOpenSidebar }) {
     navigate("/login");
   };
 
-  const avatarUrl = profile?.avatar_url || currentUser?.avatar || null;
+  const avatarUrl = profile?.avatar_url?.trim() 
+    ? profile.avatar_url 
+    : currentUser?.avatar?.trim() 
+      ? currentUser.avatar 
+      : null;
 
   return (
     <header className="glass-panel sticky top-4 z-30 mb-6 flex items-center justify-between gap-4 rounded-[28px] px-4 py-4 md:px-6">

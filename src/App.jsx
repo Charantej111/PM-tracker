@@ -21,6 +21,8 @@ import SettingsPage from "./pages/SettingsPage";
 import SkillsPage from "./pages/SkillsPage";
 import WeeklyReviewPage from "./pages/WeeklyReviewPage";
 import CalendarPage from "./pages/CalendarPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -69,6 +71,18 @@ export default function App() {
                 <RegisterPage />
               </PublicOnlyRoute>
             }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PublicOnlyRoute>
+                <ForgotPasswordPage />
+              </PublicOnlyRoute>
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={<ResetPasswordPage />}
           />
           <Route
             path="/app"

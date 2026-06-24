@@ -64,6 +64,15 @@ class NotesErrorBoundary extends Component {
 function NotesPageContent() {
   const { currentUserData, saveNote, deleteNote } = useAppContext();
   const [search, setSearch] = useState("");
+
+  if (!currentUserData) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
+      </div>
+    );
+  }
+
   const [selectedId, setSelectedId] = useState(currentUserData.notes?.[0]?.id || null);
   const editorRef = useRef(null);
 

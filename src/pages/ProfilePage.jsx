@@ -37,7 +37,11 @@ export default function ProfilePage() {
     [currentUserData?.learning?.items],
   );
 
-  const avatarUrl = profile?.avatar_url || currentUser?.avatar || null;
+  const avatarUrl = profile?.avatar_url?.trim() 
+    ? profile.avatar_url 
+    : currentUser?.avatar?.trim() 
+      ? currentUser.avatar 
+      : null;
 
   // Save profile text fields to Supabase profiles table
   const handleSaveProfile = async () => {

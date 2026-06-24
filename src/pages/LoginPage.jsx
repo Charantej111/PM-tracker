@@ -62,15 +62,20 @@ export default function LoginPage() {
             placeholder="Enter your password"
             required
           />
-          <label className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-            <input
-              type="checkbox"
-              checked={form.remember}
-              onChange={(event) => setForm((previous) => ({ ...previous, remember: event.target.checked }))}
-              className="h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
-            />
-            Remember me
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.remember}
+                onChange={(event) => setForm((previous) => ({ ...previous, remember: event.target.checked }))}
+                className="h-4 w-4 rounded border-slate-300 text-accent focus:ring-accent"
+              />
+              Remember me
+            </label>
+            <Link to="/forgot-password" className="text-sm font-semibold text-accent hover:underline">
+              Forgot Password?
+            </Link>
+          </div>
           {error ? <p className="text-sm font-medium text-rose-500">{error}</p> : null}
           <Button type="submit" className="w-full justify-center" disabled={loading}>
             {loading ? "Signing in…" : "Login"}

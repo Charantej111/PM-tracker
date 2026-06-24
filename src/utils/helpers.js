@@ -2,19 +2,35 @@ import clsx from "clsx";
 
 export const cn = (...inputs) => clsx(inputs);
 
-export const formatDate = (dateLike, options = {}) =>
-  new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: options.includeYear === false ? undefined : "numeric",
-    ...options,
-  }).format(new Date(dateLike));
+export const formatDate = (dateLike, options = {}) => {
+  if (!dateLike) return "N/A";
+  try {
+    const d = new Date(dateLike);
+    if (isNaN(d.getTime())) return "N/A";
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: options.includeYear === false ? undefined : "numeric",
+      ...options,
+    }).format(d);
+  } catch {
+    return "N/A";
+  }
+};
 
-export const formatShortDate = (dateLike) =>
-  new Intl.DateTimeFormat("en-IN", {
-    day: "numeric",
-    month: "short",
-  }).format(new Date(dateLike));
+export const formatShortDate = (dateLike) => {
+  if (!dateLike) return "N/A";
+  try {
+    const d = new Date(dateLike);
+    if (isNaN(d.getTime())) return "N/A";
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "numeric",
+      month: "short",
+    }).format(d);
+  } catch {
+    return "N/A";
+  }
+};
 
 export const formatDateKey = (date) => {
   const y = date.getFullYear();
@@ -75,3 +91,13 @@ export const parseTags = (value) =>
     .filter(Boolean);
 
 export const generateId = (prefix) => `${prefix}-${crypto.randomUUID()}`;
+
+export const getWeekStartKey = (date = new Date()) => {
+  const d = new Date(date);
+  const day = d.getDay();
+  // Adjust so that week starts on Monday
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d.setDate(diff));
+  return formatDateKey(monday);
+};
+

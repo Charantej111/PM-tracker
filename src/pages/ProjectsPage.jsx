@@ -5,6 +5,7 @@ import Card from "../components/Card";
 import Button from "../components/Button";
 import InputField from "../components/InputField";
 import PageShell from "../components/PageShell";
+import Slider from "../components/Slider";
 import { useAppContext } from "../context/AppContext";
 import { formatShortDate } from "../utils/helpers";
 
@@ -33,7 +34,13 @@ function ProjectCard({ project, updateProject, deleteProject, onStartEdit }) {
         <div className="flex-1">
           <div className="text-lg font-semibold text-ink dark:text-white leading-snug">{project.title}</div>
           <div className="mt-2 flex flex-wrap gap-2">
-            <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              project.priority === "High"
+                ? "bg-rose-50 text-rose-700 border border-rose-200/50 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-900/30"
+                : project.priority === "Low"
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50 dark:bg-emerald-950/30 dark:text-emerald-300 dark:border-emerald-900/30"
+                : "bg-amber-50 text-amber-700 border border-amber-200/50 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-900/30"
+            }`}>
               {project.priority} priority
             </span>
             <span className="inline-flex rounded-full bg-accent-soft/10 px-2.5 py-0.5 text-xs font-semibold text-accent">
@@ -78,18 +85,17 @@ function ProjectCard({ project, updateProject, deleteProject, onStartEdit }) {
           <span>Progress</span>
           <span>{project.progress}%</span>
         </span>
-        <input
-          type="range"
-          min="0"
-          max="100"
+        <Slider
+          min={0}
+          max={100}
           value={project.progress}
-          onChange={(event) =>
+          onChange={(val) =>
             updateProject(project.id, {
-              progress: Number(event.target.value),
-              status: Number(event.target.value) === 100 ? "Completed" : project.status,
+              progress: val,
+              status: val === 100 ? "Completed" : project.status,
             })
           }
-          className="mt-3 w-full accent-[rgb(var(--accent))]"
+          className="mt-3"
         />
       </label>
 
@@ -121,6 +127,14 @@ function ProjectCard({ project, updateProject, deleteProject, onStartEdit }) {
 
 export default function ProjectsPage() {
   const { currentUserData, updateProject, addProject, deleteProject } = useAppContext();
+
+  if (!currentUserData) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
+      </div>
+    );
+  }
 
   // Add/Edit states
   const [showAddForm, setShowAddForm] = useState(false);

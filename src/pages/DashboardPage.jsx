@@ -10,7 +10,7 @@ import SkeletonCard from "../components/SkeletonCard";
 import StatCard from "../components/StatCard";
 import { useAppContext } from "../context/AppContext";
 import { MonthlyCompletionChart, SkillRadarChart, WeeklyStudyChart } from "../charts/AnalyticsCharts";
-import { average, formatShortDate, getTodayKey } from "../utils/helpers";
+import { average, formatShortDate, getTodayKey, percent } from "../utils/helpers";
 
 export default function DashboardPage() {
   const { currentUserData, dashboardMetrics, triggerCelebration, logActivity, ACHIEVEMENTS_LIST } = useAppContext();
@@ -38,14 +38,24 @@ export default function DashboardPage() {
     return quotes[quoteIndex % quotes.length];
   })();
 
-  if (!currentUserData || !dashboardMetrics) return null;
+  const learningItems = currentUserData?.learning?.items || [];
+  const learningCompletion = learningItems.length > 0
+    ? average(learningItems.map((item) => item.completion || 0))
+    : 0;
 
-  const todayKey = getTodayKey();
-  const hasCheckedInToday = currentUserData.activityLog?.some(
-    (entry) => entry.date === todayKey && entry.count > 0,
+  const goalPlan = currentUserData?.goalPlan || {};
+  const weeklyGoalHours = currentUserData?.learning?.weeklyGoalHours || 18;
+
+  if (!currentUserData || !dashboardMetrics) return (
+    <div className="flex h-64 items-center justify-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
+    </div>
   );
 
-  const learningCompletion = average(currentUserData.learning.items.map((item) => item.completion));
+  const todayKey = getTodayKey();
+  const hasCheckedInToday = (currentUserData.activityLog || []).some(
+    (entry) => entry.date === todayKey && entry.count > 0,
+  );
 
   return (
     <PageShell
@@ -75,14 +85,32 @@ export default function DashboardPage() {
             icon={Goal}
             label="Current Month Goal"
             value={`${dashboardMetrics.currentMonthGoal}%`}
-            helper={currentUserData.goalPlan.currentMonth}
+            helper={goalPlan.currentMonth || "Set a monthly goal"}
           />
           <StatCard
             icon={BookOpen}
             label="Hours Studied This Week"
             value={`${dashboardMetrics.hoursStudiedThisWeek}h`}
             helper="Tracked across courses, videos, reading, and practice"
-          />
+          >
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>Goal progress</span>
+                <span>{percent(dashboardMetrics.hoursStudiedThisWeek, weeklyGoalHours)}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
+                <div
+                  className="h-full bg-accent rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(100, percent(dashboardMetrics.hoursStudiedThisWeek, weeklyGoalHours))}%` }}
+                />
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                {dashboardMetrics.hoursStudiedThisWeek >= weeklyGoalHours
+                  ? "🎉 Weekly target met!"
+                  : `${Math.max(0, weeklyGoalHours - dashboardMetrics.hoursStudiedThisWeek)}h remaining this week`}
+              </div>
+            </div>
+          </StatCard>
           <StatCard
             icon={Flame}
             label="Learning Streak"
@@ -124,10 +152,10 @@ export default function DashboardPage() {
               </div>
               <div className="mt-6 space-y-3">
                 <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                  Active skill: <span className="font-semibold text-ink dark:text-white">{dashboardMetrics.activeSkill?.name}</span>
+                  Active skill: <span className="font-semibold text-ink dark:text-white">{dashboardMetrics.activeSkill?.name || "None active"}</span>
                 </div>
                 <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">
-                  Next milestone: <span className="font-semibold text-ink dark:text-white">{dashboardMetrics.nextMilestone?.title}</span>
+                  Next milestone: <span className="font-semibold text-ink dark:text-white">{dashboardMetrics.nextMilestone?.title || "No upcoming goals"}</span>
                 </div>
               </div>
             </div>
@@ -137,7 +165,7 @@ export default function DashboardPage() {
                   <Sparkles className="h-4 w-4" />
                   Today&apos;s focus
                 </div>
-                <h3 className="mt-3 text-2xl font-semibold">{currentUserData.goalPlan.currentMonth}</h3>
+                <h3 className="mt-3 text-2xl font-semibold">{goalPlan.currentMonth || "Set a monthly goal"}</h3>
                 <p className="mt-3 text-sm leading-6 text-blue-100">
                   Build one proof point today that you can mention in your next interview.
                 </p>
@@ -171,9 +199,9 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <WeeklyStudyChart values={currentUserData.metricsSnapshot.weeklyStudyHours} />
-        <SkillRadarChart skills={currentUserData.skills} />
-        <MonthlyCompletionChart values={currentUserData.metricsSnapshot.monthlyCompletion} />
+        <WeeklyStudyChart values={(currentUserData.metricsSnapshot || {}).weeklyStudyHours || [0,0,0,0,0,0,0]} />
+        <SkillRadarChart skills={currentUserData.skills || []} />
+        <MonthlyCompletionChart values={(currentUserData.metricsSnapshot || {}).monthlyCompletion || []} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
@@ -226,23 +254,23 @@ export default function DashboardPage() {
             <Award className="h-5 w-5 text-accent" />
           </div>
           <div className="mt-6 space-y-4">
-            {currentUserData.portfolioGoals.slice(0, 4).map((goal) => (
+            {(currentUserData.portfolioGoals || []).slice(0, 4).map((goal) => (
               <div key={goal.id} className="rounded-3xl border border-slate-200/80 p-4 dark:border-white/10">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-sm font-semibold text-ink dark:text-white">{goal.title}</div>
+                    <div className="text-sm font-semibold text-ink dark:text-white">{goal.title || "Untitled goal"}</div>
                     <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Due {formatShortDate(goal.deadline)}
+                      Due {formatShortDate(goal.deadline || goal.target_date)}
                     </div>
                   </div>
                   <div className="rounded-full bg-accent-soft/15 px-3 py-1 text-xs font-semibold text-accent">
-                    {goal.progress}%
+                    {goal.progress || 0}%
                   </div>
                 </div>
                 <div className="mt-4 h-2 rounded-full bg-slate-100 dark:bg-slate-900">
-                  <div className="h-2 rounded-full bg-accent" style={{ width: `${goal.progress}%` }} />
+                  <div className="h-2 rounded-full bg-accent" style={{ width: `${goal.progress || 0}%` }} />
                 </div>
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{goal.milestone}</p>
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{goal.milestone || goal.description || ""}</p>
               </div>
             ))}
             <div className="rounded-3xl bg-slate-50 p-4 text-sm text-slate-600 dark:bg-slate-900 dark:text-slate-300">
