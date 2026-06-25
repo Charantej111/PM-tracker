@@ -42,14 +42,19 @@ const SuspenseWrapper = ({ children }) => (
 
 
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isRecoverySession } = useAuth();
   if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" /></div>;
+  // Recovery sessions are not real logins — send the user to reset their password.
+  if (isRecoverySession) return <Navigate to="/reset-password" replace />;
   return user ? children : <Navigate to="/login" replace />;
 };
 
 const PublicOnlyRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isRecoverySession } = useAuth();
   if (loading) return null;
+  // During password recovery the user has a session but must NOT be redirected
+  // to the dashboard — they need to complete the reset flow first.
+  if (isRecoverySession) return children;
   return user ? <Navigate to="/app/dashboard" replace /> : children;
 };
 
