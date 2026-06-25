@@ -8,13 +8,44 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  /**
-   * true while the current session was established via a PASSWORD_RECOVERY
-   * email link.  Guards (ProtectedRoute / PublicOnlyRoute) must NOT treat this
-   * as a normal authenticated session.  Cleared once the user successfully
-   * calls updateUser() with a new password.
-   */
-  const [isRecoverySession, setIsRecoverySession] = useState(false);
+  const [isRecoverySession, setIsRecoverySession] = useState(() => {
+    const hash = window.location.hash;
+    const search = window.location.search;
+    const isRecoveryLink =
+      hash.includes("type=recovery") ||
+      hash.includes("access_token") ||
+      search.includes("type=recovery") ||
+      search.includes("access_token");
+
+    const isInRecoveryMode = sessionStorage.getItem("supabase_recovery_mode") === "true";
+    const isResetPath = window.location.pathname === "/reset-password";
+
+    if (isRecoveryLink || (isInRecoveryMode && isResetPath)) {
+      if (isRecoveryLink) {
+        sessionStorage.setItem("supabase_recovery_mode", "true");
+      }
+      return true;
+    }
+    return false;
+  });
+
+  // Redirect to /reset-password if recovery parameters are present on another route
+  useEffect(() => {
+    const hash = window.location.hash;
+    const search = window.location.search;
+    const isRecoveryLink =
+      hash.includes("type=recovery") ||
+      hash.includes("access_token") ||
+      search.includes("type=recovery") ||
+      search.includes("access_token");
+
+    const isResetPath = window.location.pathname === "/reset-password";
+
+    if (isRecoveryLink && !isResetPath) {
+      console.log("Redirecting recovery link to /reset-password");
+      window.location.href = window.location.origin + "/reset-password" + window.location.search + window.location.hash;
+    }
+  }, []);
 
   // Fetch the profile row for the currently authenticated user
   const fetchProfile = useCallback(async (userId) => {
@@ -39,16 +70,28 @@ export const AuthProvider = ({ children }) => {
   // Listen for auth state changes (login, logout, token refresh, recovery)
   useEffect(() => {
     // Get the initial session on mount.
-    // If the URL contains a recovery hash, Supabase will have already
-    // exchanged it — onAuthStateChange will fire PASSWORD_RECOVERY shortly.
+    // If the URL contains a recovery hash or we've previously set recovery mode,
+    // we keep isRecoverySession true and don't load the normal authenticated user profile.
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      // Don't set user/session here if this looks like a recovery link;
-      // onAuthStateChange will handle it with the correct event type.
       const hash = window.location.hash;
+      const search = window.location.search;
       const isRecoveryLink =
-        hash.includes("type=recovery") || hash.includes("access_token");
+        hash.includes("type=recovery") ||
+        hash.includes("access_token") ||
+        search.includes("type=recovery") ||
+        search.includes("access_token");
+      const isResetPath = window.location.pathname === "/reset-password";
+      const isInRecoveryMode = sessionStorage.getItem("supabase_recovery_mode") === "true";
 
-      if (!isRecoveryLink) {
+      if (isResetPath && (isRecoveryLink || isInRecoveryMode)) {
+        setIsRecoverySession(true);
+        if (isRecoveryLink || isInRecoveryMode) {
+          sessionStorage.setItem("supabase_recovery_mode", "true");
+        }
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+        setLoading(false);
+      } else {
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
         if (initialSession?.user) {
@@ -57,26 +100,46 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
         }
       }
-      // If it IS a recovery link, keep loading=true until the
-      // PASSWORD_RECOVERY event fires so guards don't redirect prematurely.
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log("PATH:", window.location.pathname);
+      console.log("HASH:", window.location.hash);
+      console.log("AUTH EVENT:", event);
+      console.log("isRecoverySession:", sessionStorage.getItem("supabase_recovery_mode") === "true");
+      console.log("SESSION:", newSession);
+
       if (event === "PASSWORD_RECOVERY") {
-        // Recovery session — mark it as such and DO NOT treat it as a normal
-        // login.  Guards will check isRecoverySession before redirecting.
+        console.log("RECOVERY: true (PASSWORD_RECOVERY triggered)");
+        setIsRecoverySession(true);
+        sessionStorage.setItem("supabase_recovery_mode", "true");
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        setLoading(false);
+        return;
+      }
+
+      // For other events (like SIGNED_IN, TOKEN_REFRESHED, INITIAL_SESSION),
+      // do NOT clear recovery mode if the user is on the /reset-password page
+      // and we have a recovery mode flag active in sessionStorage.
+      const isResetPath = window.location.pathname === "/reset-password";
+      const isInRecoveryMode = sessionStorage.getItem("supabase_recovery_mode") === "true";
+
+      if (isResetPath && isInRecoveryMode) {
+        console.log("RECOVERY: true (preserving recovery state during event", event, ")");
         setIsRecoverySession(true);
         setSession(newSession);
         setUser(newSession?.user ?? null);
         setLoading(false);
-        // Deliberately skip fetchProfile — the user hasn't logged in normally.
         return;
       }
 
       // For all other events, behave normally.
+      console.log("RECOVERY: false (event", event, ")");
       setIsRecoverySession(false);
+      sessionStorage.removeItem("supabase_recovery_mode");
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
@@ -136,22 +199,26 @@ export const AuthProvider = ({ children }) => {
     return { ok: true, user: data.user };
   };
 
-  /**
-   * Sign out — clears session and profile state.
-   */
   const signOut = async () => {
+    setLoading(true);
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setProfile(null);
     setIsRecoverySession(false);
+    sessionStorage.removeItem("supabase_recovery_mode");
+    setLoading(false);
   };
 
   /**
    * Clear the recovery mode flag after a successful password update.
    * Called by ResetPasswordPage once updateUser() succeeds.
    */
-  const clearRecoveryMode = () => setIsRecoverySession(false);
+  const clearRecoveryMode = () => {
+    setIsRecoverySession(false);
+    sessionStorage.removeItem("supabase_recovery_mode");
+    setLoading(false);
+  };
 
   /**
    * Update the profile row in Supabase and refresh local state.

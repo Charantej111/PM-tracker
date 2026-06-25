@@ -43,6 +43,17 @@ const SuspenseWrapper = ({ children }) => (
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading, isRecoverySession } = useAuth();
+  console.log("ProtectedRoute", {
+    user,
+    loading,
+    isRecoverySession,
+    pathname: window.location.pathname,
+  });
+
+  if (window.location.pathname === "/reset-password") {
+    return children;
+  }
+
   if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" /></div>;
   // Recovery sessions are not real logins — send the user to reset their password.
   if (isRecoverySession) return <Navigate to="/reset-password" replace />;
@@ -51,7 +62,18 @@ const ProtectedRoute = ({ children }) => {
 
 const PublicOnlyRoute = ({ children }) => {
   const { user, loading, isRecoverySession } = useAuth();
-  if (loading) return null;
+  console.log("PublicOnlyRoute", {
+    user,
+    loading,
+    isRecoverySession,
+    pathname: window.location.pathname,
+  });
+
+  if (window.location.pathname === "/reset-password") {
+    return children;
+  }
+
+  if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" /></div>;
   // During password recovery the user has a session but must NOT be redirected
   // to the dashboard — they need to complete the reset flow first.
   if (isRecoverySession) return children;
@@ -71,6 +93,9 @@ function ScrollToTop() {
 export default function App() {
   const location = useLocation();
   const { activeAchievementCelebration, dismissCelebration } = useAppContext();
+
+  console.log("PATH:", window.location.pathname);
+  console.log("HASH:", window.location.hash);
 
   return (
     <>

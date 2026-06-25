@@ -10,23 +10,40 @@ import { useAuth } from "../context/AuthContext";
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const { showToast } = useAppContext();
-  const { loading: authLoading, isRecoverySession, clearRecoveryMode } = useAuth();
+  const { loading: authLoading, isRecoverySession, clearRecoveryMode, signOut } = useAuth();
   const [form, setForm] = useState({ password: "", confirmPassword: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  useEffect(() => {
+    console.log("RESET PAGE MOUNTED");
+  }, []);
 
   // If auth has finished loading and there is no recovery session, the user
   // arrived here without a valid reset link — redirect to login.
   useEffect(() => {
-    if (!authLoading && !isRecoverySession) {
-      showToast(
-        "Access denied",
-        "No active password reset session found. Please request a new reset link.",
-        "error"
-      );
+    if (!authLoading && !isRecoverySession && !resetSuccess) {
+      const hash = window.location.hash;
+      const search = window.location.search;
+      const hasError = hash.includes("error") || search.includes("error");
+
+      if (hasError) {
+        showToast(
+          "Link Expired",
+          "The password reset link is invalid or has expired. Please request a new one.",
+          "error"
+        );
+      } else {
+        showToast(
+          "Access denied",
+          "No active password reset session found. Please request a new reset link.",
+          "error"
+        );
+      }
       navigate("/login", { replace: true });
     }
-  }, [authLoading, isRecoverySession, navigate, showToast]);
+  }, [authLoading, isRecoverySession, resetSuccess, navigate, showToast]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -50,16 +67,22 @@ export default function ResetPasswordPage() {
 
       if (resetError) throw resetError;
 
-      // Clear the recovery flag BEFORE signing out so guards don't
-      // re-trigger a recovery redirect on the way to /login.
+      console.log("Password updated");
+      setResetSuccess(true);
+      console.log("Signing out");
+      await signOut();
+      console.log("Recovery cleared");
       clearRecoveryMode();
-      await supabase.auth.signOut();
+      console.log("Navigating to login");
 
       showToast(
         "Password updated",
         "Your password has been reset successfully. Please login with your new password.",
         "success"
       );
+      
+      // Clear URL hash after processing
+      window.history.replaceState({}, document.title, "/login");
       navigate("/login", { replace: true });
     } catch (err) {
       setError(err.message || "Failed to update password.");
