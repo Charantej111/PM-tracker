@@ -17,9 +17,9 @@ export default function Slider({ value = 0, onChange, min = 0, max = 100, step =
       value={safeValue}
       onChange={handleChange}
       style={{
-        backgroundImage: `linear-gradient(to right, var(--accent) ${percentage}%, transparent ${percentage}%)`
+        background: `linear-gradient(to right, rgb(var(--accent)) ${percentage}%, var(--slider-track) ${percentage}%)`
       }}
-      className={`w-full cursor-pointer h-2 bg-slate-100 rounded-lg appearance-none accent-accent dark:bg-slate-800 ${className}`}
+      className={`w-full cursor-pointer h-2 rounded-lg appearance-none accent-accent ${className}`}
     />
   );
 }

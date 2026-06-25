@@ -5,24 +5,41 @@ import AppLayout from "./layouts/AppLayout";
 import ToastViewport from "./components/ToastViewport";
 import { useAppContext } from "./context/AppContext";
 import { useAuth } from "./context/AuthContext";
-import DashboardPage from "./pages/DashboardPage";
-import DailyPlannerPage from "./pages/DailyPlannerPage";
-import LandingPage from "./pages/LandingPage";
-import LearningHubPage from "./pages/LearningHubPage";
-import LoginPage from "./pages/LoginPage";
-import NotesPage from "./pages/NotesPage";
-import PortfolioGoalsPage from "./pages/PortfolioGoalsPage";
-import ProfilePage from "./pages/ProfilePage";
-import ProjectsPage from "./pages/ProjectsPage";
-import RegisterPage from "./pages/RegisterPage";
-import ResourcesPage from "./pages/ResourcesPage";
-import RoadmapPage from "./pages/RoadmapPage";
-import SettingsPage from "./pages/SettingsPage";
-import SkillsPage from "./pages/SkillsPage";
-import WeeklyReviewPage from "./pages/WeeklyReviewPage";
-import CalendarPage from "./pages/CalendarPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
+import { lazy, Suspense } from "react";
+
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const DailyPlannerPage = lazy(() => import("./pages/DailyPlannerPage"));
+const RoadmapPage = lazy(() => import("./pages/RoadmapPage"));
+const SkillsPage = lazy(() => import("./pages/SkillsPage"));
+const LearningHubPage = lazy(() => import("./pages/LearningHubPage"));
+const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
+const WeeklyReviewPage = lazy(() => import("./pages/WeeklyReviewPage"));
+const NotesPage = lazy(() => import("./pages/NotesPage"));
+const ResourcesPage = lazy(() => import("./pages/ResourcesPage"));
+const PortfolioGoalsPage = lazy(() => import("./pages/PortfolioGoalsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const CalendarPage = lazy(() => import("./pages/CalendarPage"));
+const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+
+const SuspenseWrapper = ({ children }) => (
+  <Suspense
+    fallback={
+      <div className="flex min-h-[400px] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
+      </div>
+    }
+  >
+    {children}
+  </Suspense>
+);
+
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -55,12 +72,14 @@ export default function App() {
       <ScrollToTop />
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<SuspenseWrapper><LandingPage /></SuspenseWrapper>} />
           <Route
             path="/login"
             element={
               <PublicOnlyRoute>
-                <LoginPage />
+                <SuspenseWrapper>
+                  <LoginPage />
+                </SuspenseWrapper>
               </PublicOnlyRoute>
             }
           />
@@ -68,7 +87,9 @@ export default function App() {
             path="/register"
             element={
               <PublicOnlyRoute>
-                <RegisterPage />
+                <SuspenseWrapper>
+                  <RegisterPage />
+                </SuspenseWrapper>
               </PublicOnlyRoute>
             }
           />
@@ -76,13 +97,19 @@ export default function App() {
             path="/forgot-password"
             element={
               <PublicOnlyRoute>
-                <ForgotPasswordPage />
+                <SuspenseWrapper>
+                  <ForgotPasswordPage />
+                </SuspenseWrapper>
               </PublicOnlyRoute>
             }
           />
           <Route
             path="/reset-password"
-            element={<ResetPasswordPage />}
+            element={
+              <SuspenseWrapper>
+                <ResetPasswordPage />
+              </SuspenseWrapper>
+            }
           />
           <Route
             path="/app"
@@ -93,19 +120,20 @@ export default function App() {
             }
           >
             <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="planner" element={<DailyPlannerPage />} />
-            <Route path="roadmap" element={<RoadmapPage />} />
-            <Route path="skills" element={<SkillsPage />} />
-            <Route path="learning" element={<LearningHubPage />} />
-            <Route path="projects" element={<ProjectsPage />} />
-            <Route path="weekly-review" element={<WeeklyReviewPage />} />
-            <Route path="notes" element={<NotesPage />} />
-            <Route path="resources" element={<ResourcesPage />} />
-            <Route path="portfolio-goals" element={<PortfolioGoalsPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="calendar" element={<CalendarPage />} />
+            <Route path="dashboard" element={<SuspenseWrapper><DashboardPage /></SuspenseWrapper>} />
+            <Route path="planner" element={<SuspenseWrapper><DailyPlannerPage /></SuspenseWrapper>} />
+            <Route path="roadmap" element={<SuspenseWrapper><RoadmapPage /></SuspenseWrapper>} />
+            <Route path="skills" element={<SuspenseWrapper><SkillsPage /></SuspenseWrapper>} />
+            <Route path="learning" element={<SuspenseWrapper><LearningHubPage /></SuspenseWrapper>} />
+            <Route path="projects" element={<SuspenseWrapper><ProjectsPage /></SuspenseWrapper>} />
+            <Route path="weekly-review" element={<SuspenseWrapper><WeeklyReviewPage /></SuspenseWrapper>} />
+            <Route path="notes" element={<SuspenseWrapper><NotesPage /></SuspenseWrapper>} />
+            <Route path="resources" element={<SuspenseWrapper><ResourcesPage /></SuspenseWrapper>} />
+            <Route path="portfolio-goals" element={<SuspenseWrapper><PortfolioGoalsPage /></SuspenseWrapper>} />
+            <Route path="profile" element={<SuspenseWrapper><ProfilePage /></SuspenseWrapper>} />
+            <Route path="settings" element={<SuspenseWrapper><SettingsPage /></SuspenseWrapper>} />
+            <Route path="calendar" element={<SuspenseWrapper><CalendarPage /></SuspenseWrapper>} />
+            <Route path="reports" element={<SuspenseWrapper><ReportsPage /></SuspenseWrapper>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
