@@ -31,7 +31,7 @@ export default function ReportPrintView({ userData }) {
         <PMReadinessRadar skills={skills} />
       </div>
       <div id="print-project-pie-chart" style={{ width: "400px", height: "240px", background: "#ffffff" }}>
-        <ProjectStatusPie projects={projects} />
+        <ProjectStatusPie projects={projects} hideLegend={true} />
       </div>
       <div id="print-study-bar-chart" style={{ width: "400px", height: "240px", background: "#ffffff" }}>
         <StudyHoursBar learningItems={learningItems} />

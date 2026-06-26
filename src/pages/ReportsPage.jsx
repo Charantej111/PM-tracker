@@ -34,7 +34,7 @@ import {
   RoadmapCompletionBar,
 } from "../charts/ReportCharts";
 import { exportReportToPdf } from "../utils/pdfExport";
-import { average, formatDate, formatShortDate } from "../utils/helpers";
+import { average, formatDate, formatShortDate, formatReviewReflection } from "../utils/helpers";
 import ReportPrintView from "../components/ReportPrintView";
 
 export default function ReportsPage() {
@@ -387,24 +387,31 @@ export default function ReportsPage() {
               <div className="grid gap-4 sm:grid-cols-3 text-sm">
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-white/5">
                   <div className="text-slate-400 font-medium">Study Completed</div>
-                  <div className="text-xl font-bold text-ink dark:text-white mt-1">{latestReview.studyHours || 0} hours</div>
+                  <div className="text-xl font-bold text-ink dark:text-white mt-1">{weeklyStats.studyCompleted || 0} hours</div>
                 </div>
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-white/5">
                   <div className="text-slate-400 font-medium">Roadmap Topics Done</div>
-                  <div className="text-xl font-bold text-ink dark:text-white mt-1">{latestReview.roadmapCompleted || 0} topics</div>
+                  <div className="text-xl font-bold text-ink dark:text-white mt-1">{weeklyStats.roadmapTopicsCompleted || 0} topics</div>
                 </div>
                 <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-white/5">
                   <div className="text-slate-400 font-medium">Weekly Goal Status</div>
                   <div className="text-xl font-bold text-ink dark:text-white mt-1">
-                    {latestReview.goalsMet ? "Goals Met ✓" : "In Progress"}
+                    {weeklyStats.studyCompleted >= weeklyStats.studyTarget ? "Goals Met ✓" : "In Progress"}
                   </div>
                 </div>
               </div>
-              <div className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                <span className="font-bold text-ink dark:text-white block mb-1">Reflection Summary:</span>
-                <p className="italic">
-                  &ldquo;{latestReview.reflection || "No reflection text entered."}&rdquo;
-                </p>
+              <div className="mt-4 space-y-3">
+                <span className="font-bold text-sm text-ink dark:text-white block mb-1">Reflection Summary:</span>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {formatReviewReflection(latestReview).map((item) => (
+                    <div key={item.label} className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-100 dark:border-white/5">
+                      <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{item.label}</div>
+                      <div className="text-sm mt-1 text-slate-700 dark:text-slate-300 italic leading-relaxed">
+                        {item.value || "No entry recorded."}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (

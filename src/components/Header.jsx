@@ -34,7 +34,9 @@ export default function Header({ onOpenSidebar }) {
         <div>
           <p className="text-sm text-slate-500 dark:text-slate-400">Welcome back, {currentUser?.name}</p>
           <h1 className="mt-1 text-lg font-semibold text-ink dark:text-white">
-            {currentUserData?.goalPlan?.currentMonth}
+            {dashboardMetrics?.goalMetrics?.monthly
+              ? `${dashboardMetrics.goalMetrics.monthly.title} (${dashboardMetrics.goalMetrics.monthly.displayLabels?.fraction || ""})`
+              : "No Monthly Goal Set"}
           </h1>
         </div>
       </div>

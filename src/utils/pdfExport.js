@@ -1,4 +1,4 @@
-import { average, formatDate, formatShortDate } from "./helpers";
+import { average, formatDate, formatShortDate, formatReviewReflection } from "./helpers";
 import {
   computeWeeklyReport,
   computeMonthlyReport,
@@ -6,6 +6,7 @@ import {
   getWeekRange,
   getMonthRange,
 } from "./reportUtils";
+import { computeRoadmapMetrics } from "./roadmapMetrics";
 
 /**
  * Determines PM readiness tier.
@@ -154,12 +155,10 @@ export const exportReportToPdf = async (reportType = "weekly", currentUser = {},
     const readiness = computePMReadinessScore(skills);
     const readinessLevel = getReadinessTier(readiness.overall);
 
-    // Roadmap topics: Completed count includes only topics with progress === 100%
-    const roadmapTopics = Object.values(roadmap).flat().filter(Boolean);
-    const roadmapCompletedCount = roadmapTopics.filter((t) => (t.progress || 0) === 100).length;
-    const roadmapAverageProgress = roadmapTopics.length > 0
-      ? Math.round(roadmapTopics.reduce((sum, t) => sum + (t.progress || 0), 0) / roadmapTopics.length)
-      : 0;
+    const roadmapStats = computeRoadmapMetrics(roadmap);
+    const roadmapCompletedCount = roadmapStats.completedSubTopics;
+    const roadmapAverageProgress = roadmapStats.overallCompletionPct;
+    const totalRoadmapTopicsCount = roadmapStats.totalSubTopics;
 
     // Top Skill
     const sortedSkills = [...skills].sort((a, b) => (b.progress || 0) - (a.progress || 0));
@@ -195,7 +194,7 @@ export const exportReportToPdf = async (reportType = "weekly", currentUser = {},
     }
 
     // Insight 3: Roadmap status
-    if (roadmapTopics.length > 0) {
+    if (totalRoadmapTopicsCount > 0) {
       if (roadmapAverageProgress <= 25) {
         insights.push(`Roadmap progress remains in the early stage (${roadmapAverageProgress}% average progress).`);
       } else {
@@ -518,7 +517,7 @@ export const exportReportToPdf = async (reportType = "weekly", currentUser = {},
         pdf.setFont("helvetica", "italic");
         pdf.setFontSize(8);
         pdf.setTextColor(148, 163, 184);
-        pdf.text("No projects available.", margin, currentY);
+        pdf.text("No project data available for visualization.", margin, currentY);
         currentY += 10;
       } else {
         const headers = ["Project Title", "Current Status", "Priority Tier", "Progress"];
@@ -534,13 +533,61 @@ export const exportReportToPdf = async (reportType = "weekly", currentUser = {},
         currentY += 5;
       }
 
-      // Conditional chart rendering: threshold >= 3 projects
-      if (projects.length >= 3) {
-        checkSpace(60);
+      // Render chart if there are projects
+      if (projects.length > 0) {
+        checkSpace(68);
         const chartImg = await captureChartImage(html2canvas, "print-project-pie-chart");
         if (chartImg) {
           pdf.addImage(chartImg, "PNG", margin + 35, currentY, 100, 48, undefined, "FAST");
-          currentY += 56;
+          currentY += 50;
+
+          // Render proper centered vector legend below the chart
+          const todo = projects.filter((p) => p.status === "To Do").length;
+          const inProgress = projects.filter((p) => p.status === "In Progress").length;
+          const completed = projects.filter((p) => p.status === "Completed").length;
+          const total = todo + inProgress + completed;
+
+          const todoPct = total > 0 ? Math.round((todo / total) * 100) : 0;
+          const inProgressPct = total > 0 ? Math.round((inProgress / total) * 100) : 0;
+          const completedPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+          const legendItems = [
+            { label: `To Do: ${todo} (${todoPct}%)`, color: [96, 165, 250] },
+            { label: `In Progress: ${inProgress} (${inProgressPct}%)`, color: [37, 99, 235] },
+            { label: `Completed: ${completed} (${completedPct}%)`, color: [16, 185, 129] },
+          ];
+
+          // Calculate total text width for centering
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(8);
+          
+          let totalWidth = 0;
+          const spacing = 10; // spacing between items in mm
+          const bulletRadius = 1.2;
+          const bulletTextGap = 2.5;
+
+          const itemWidths = legendItems.map(item => {
+            return (bulletRadius * 2) + bulletTextGap + pdf.getTextWidth(item.label);
+          });
+
+          totalWidth = itemWidths.reduce((sum, w) => sum + w, 0) + (legendItems.length - 1) * spacing;
+          
+          let startX = margin + (usableWidth - totalWidth) / 2;
+
+          legendItems.forEach((item, idx) => {
+            // Draw bullet
+            pdf.setFillColor(item.color[0], item.color[1], item.color[2]);
+            pdf.circle(startX + bulletRadius, currentY - 0.8, bulletRadius, "F");
+
+            // Draw label
+            pdf.setTextColor(71, 85, 105); // Slate-600
+            pdf.text(item.label, startX + (bulletRadius * 2) + bulletTextGap, currentY);
+
+            // Increment startX for next item
+            startX += itemWidths[idx] + spacing;
+          });
+
+          currentY += 12; // Breathing space after legend
         } else {
           pdf.setFont("helvetica", "italic");
           pdf.setFontSize(7.5);
@@ -625,7 +672,7 @@ export const exportReportToPdf = async (reportType = "weekly", currentUser = {},
       pdf.line(margin, currentY + 2.5, pageWidth - margin, currentY + 2.5);
       currentY += 10.5; // 8mm below section title
 
-      const roadmapCategories = Object.keys(roadmap);
+      const roadmapCategories = roadmapStats.perCategory;
       if (roadmapCategories.length === 0) {
         pdf.setFont("helvetica", "italic");
         pdf.setFontSize(8);
@@ -638,27 +685,21 @@ export const exportReportToPdf = async (reportType = "weekly", currentUser = {},
         const colWidths = [84, 50, 40];
         
         const rows = roadmapCategories.map((cat) => {
-          const topics = roadmap[cat] || [];
-          // Count only topics with 100% completion
-          const completedCount = topics.filter((t) => (t.progress || 0) === 100).length;
-          // Count topics with progress greater than 0% and less than 100%
-          const activeCount = topics.filter((t) => (t.progress || 0) > 0 && (t.progress || 0) < 100).length;
-          // Average progress of all topics
-          const averageProgress = topics.length > 0
-            ? Math.round(topics.reduce((sum, t) => sum + (t.progress || 0), 0) / topics.length)
-            : 0;
+          const completedCount = cat.completed;
+          const activeCount = cat.total - cat.completed;
+          const averageProgress = cat.completionPct;
 
           // Status calculations
           let statusText = `${averageProgress}%`;
           if (averageProgress > 0 && completedCount === 0) {
             statusText = `${averageProgress}% (In Progress)`;
-          } else if (completedCount === topics.length && topics.length > 0) {
+          } else if (completedCount === cat.total && cat.total > 0) {
             statusText = "Completed";
           }
 
           return [
-            cat,
-            `${completedCount} / ${topics.length} (${activeCount} Active)`,
+            cat.name,
+            `${completedCount} / ${cat.total} (${activeCount} Active)`,
             statusText,
           ];
         });
@@ -668,7 +709,7 @@ export const exportReportToPdf = async (reportType = "weekly", currentUser = {},
       }
 
       // Conditional chart rendering: threshold >= 5 topics
-      if (roadmapTopics.length >= 5) {
+      if (totalRoadmapTopicsCount >= 5) {
         checkSpace(60);
         const chartImg = await captureChartImage(html2canvas, "print-roadmap-bar-chart");
         if (chartImg) {
@@ -720,57 +761,58 @@ export const exportReportToPdf = async (reportType = "weekly", currentUser = {},
       pdf.setFont("helvetica", "bold");
       pdf.setFontSize(10.5);
       pdf.setTextColor(37, 99, 235);
-      pdf.text("7. WEEKLY REFLECTIONS & REVIEWS", margin, currentY);
+      pdf.text(`7. WEEKLY REFLECTIONS & REVIEWS (Total: ${reviews.length})`, margin, currentY);
       pdf.setDrawColor(226, 232, 240);
       pdf.line(margin, currentY + 2.5, pageWidth - margin, currentY + 2.5);
-      currentY += 10.5; // 8mm below section title
+      currentY += 10.5;
 
-      const latestReview = reviews.length > 0
-        ? [...reviews].sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at))[0]
-        : null;
+      const recentReviews = reviews.length > 0
+        ? [...reviews].sort((a, b) => new Date(b.date || b.created_at) - new Date(a.date || a.created_at)).slice(0, 2)
+        : [];
 
-      if (!latestReview) {
+      if (recentReviews.length === 0) {
         pdf.setFont("helvetica", "italic");
         pdf.setFontSize(8);
         pdf.setTextColor(148, 163, 184);
         pdf.text("No weekly reflections submitted.", margin, currentY);
         currentY += 10;
       } else {
-        const refText = latestReview.reflection || "No reflection text entered.";
-        const refLines = pdf.splitTextToSize(`"${refText}"`, usableWidth - 10);
-        // Slightly larger line height for reflections
-        const textHeight = refLines.length * 5;
-        const blockHeight = textHeight + 18;
+        recentReviews.forEach((review) => {
+          const contentSections = formatReviewReflection(review)
+            .map((item) => item.value ? `${item.label}: ${item.value}` : "")
+            .filter(Boolean);
+          
+          const refText = contentSections.length > 0 ? contentSections.join("\n\n") : "No detailed reflection entered.";
+          const refLines = pdf.splitTextToSize(refText, usableWidth - 10);
+          
+          const textHeight = refLines.length * 4.5;
+          const blockHeight = textHeight + 14;
 
-        checkSpace(blockHeight);
+          checkSpace(blockHeight + 5);
 
-        // Blockquote box
-        pdf.setFillColor(248, 250, 252);
-        pdf.rect(margin, currentY, usableWidth, blockHeight, "F");
+          // Blockquote box
+          pdf.setFillColor(248, 250, 252);
+          pdf.rect(margin, currentY, usableWidth, blockHeight, "F");
 
-        // Left blue border line
-        pdf.setFillColor(37, 99, 235);
-        pdf.rect(margin, currentY, 1.2, blockHeight, "F");
+          // Left blue border line
+          pdf.setFillColor(37, 99, 235);
+          pdf.rect(margin, currentY, 1.2, blockHeight, "F");
 
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(71, 85, 105);
-        pdf.text(`Review Logged: ${formatDate(latestReview.date || latestReview.created_at)}`, margin + 5, currentY + 5);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(7.5);
+          pdf.setTextColor(71, 85, 105);
+          pdf.text(`Review Logged: ${formatDate(review.date || review.created_at)}`, margin + 5, currentY + 5);
 
-        pdf.setFont("helvetica", "italic");
-        pdf.setFontSize(8);
-        pdf.setTextColor(15, 23, 42);
-        
-        refLines.forEach((line, idx) => {
-          pdf.text(line, margin + 5, currentY + 11 + idx * 5);
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(8);
+          pdf.setTextColor(15, 23, 42);
+          
+          refLines.forEach((line, idx) => {
+            pdf.text(line, margin + 5, currentY + 11 + idx * 4.5);
+          });
+
+          currentY += blockHeight + 5;
         });
-
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(7);
-        pdf.setTextColor(148, 163, 184);
-        pdf.text(`Activity Stats: ${latestReview.studyHours || 0}h logged | ${latestReview.roadmapCompleted || 0} topics done | Goal status: ${latestReview.goalsMet ? "MET" : "IN_PROGRESS"}`, margin + 5, currentY + blockHeight - 4);
-
-        currentY += blockHeight + 5;
       }
     };
 

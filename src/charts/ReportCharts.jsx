@@ -62,7 +62,7 @@ export function PMReadinessRadar({ skills = [] }) {
   );
 }
 
-export function ProjectStatusPie({ projects = [] }) {
+export function ProjectStatusPie({ projects = [], hideLegend = false }) {
   const todo = projects.filter((p) => p.status === "To Do").length;
   const inProgress = projects.filter((p) => p.status === "In Progress").length;
   const completed = projects.filter((p) => p.status === "Completed").length;
@@ -83,7 +83,7 @@ export function ProjectStatusPie({ projects = [] }) {
 
   return (
     <div className="h-64 sm:h-72 w-full flex flex-col items-center justify-center">
-      <ResponsiveContainer width="100%" height="80%">
+      <ResponsiveContainer width="100%" height={hideLegend ? "100%" : "80%"}>
         <PieChart>
           <Pie
             data={data}
@@ -101,14 +101,20 @@ export function ProjectStatusPie({ projects = [] }) {
           <Tooltip formatter={(value) => [`${value} projects`, "Count"]} />
         </PieChart>
       </ResponsiveContainer>
-      <div className="flex gap-4 text-xs font-semibold mt-2">
-        {data.map((item) => (
-          <div key={item.name} className="flex items-center gap-1.5">
-            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-            <span className="text-slate-600 dark:text-slate-300">{item.name} ({item.value})</span>
-          </div>
-        ))}
-      </div>
+      {!hideLegend && (
+        <div className="flex gap-4 text-xs font-semibold mt-2">
+          {data.map((item) => {
+            const total = todo + inProgress + completed;
+            const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+            return (
+              <div key={item.name} className="flex items-center gap-1.5">
+                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
+                <span className="text-slate-600 dark:text-slate-300">{item.name}: {item.value} ({pct}%)</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -158,24 +164,26 @@ export function StudyHoursBar({ learningItems = [] }) {
 }
 
 export function RoadmapCompletionBar({ roadmap = {} }) {
-  const categories = Object.keys(roadmap);
-  if (categories.length === 0) {
+  const mainTopics = roadmap.mainTopics || [];
+  const byCategory = roadmap.byCategory || {};
+
+  if (mainTopics.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center text-slate-400">
-        No roadmap categories found.
+        No roadmap main topics found.
       </div>
     );
   }
 
-  const data = categories.map((cat) => {
-    const topics = roadmap[cat] || [];
+  const data = mainTopics.map((mt) => {
+    const topics = byCategory[mt.name] || [];
     const completedCount = topics.filter((t) => t.completed).length;
     const progress = topics.length > 0
       ? Math.round((topics.reduce((sum, t) => sum + (t.progress || 0), 0) / (topics.length * 100)) * 100)
       : 0;
 
     return {
-      name: cat,
+      name: mt.name,
       progress,
       completed: completedCount,
       total: topics.length,

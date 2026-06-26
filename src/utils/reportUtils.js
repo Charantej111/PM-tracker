@@ -1,4 +1,5 @@
 import { average } from "./helpers";
+import { computeRoadmapMetrics } from "./roadmapMetrics";
 
 /**
  * Returns formatted week range string "MMM DD – MMM DD" for the week containing referenceDate.
@@ -75,8 +76,8 @@ export const computeWeeklyReport = (userData) => {
   const projectsCompleted = projects.filter((p) => p.status === "Completed").length;
 
   // Roadmap topics completed
-  const roadmapTopics = Object.values(roadmapCategories).flat().filter(Boolean);
-  const roadmapCompletedCount = roadmapTopics.filter((t) => t.completed).length;
+  const roadmapMetrics = computeRoadmapMetrics(userData?.roadmap);
+  const roadmapCompletedCount = roadmapMetrics.completedSubTopics;
 
   // Goal completion % (average progress of all portfolio goals)
   const goalCompletionPercentage = portfolioGoals.length > 0
@@ -116,8 +117,8 @@ export const computeMonthlyReport = (userData) => {
   const projectsCompleted = projects.filter((p) => p.status === "Completed").length;
 
   // Roadmap topics completed
-  const roadmapTopics = Object.values(roadmapCategories).flat().filter(Boolean);
-  const roadmapCompletedCount = roadmapTopics.filter((t) => t.completed).length;
+  const roadmapMetrics = computeRoadmapMetrics(userData?.roadmap);
+  const roadmapCompletedCount = roadmapMetrics.completedSubTopics;
 
   // Goal completion percentage
   const goalCompletionPercentage = portfolioGoals.length > 0
@@ -153,4 +154,56 @@ export const computeStudyHoursBreakdown = (learningItems = []) => {
     name: type,
     value: counts[type],
   }));
+};
+
+export const computeGoalMetrics = (goals = {}, roadmapMetrics = {}, dashboardMetrics = {}) => {
+  const result = {};
+
+  Object.keys(goals).forEach((scope) => {
+    const goal = goals[scope];
+    if (!goal) return;
+
+    const title = goal.title || "Goal";
+    const target = Number(goal.target) || 0;
+    const currentValue = Number(goal.currentValue) || 0;
+    const unit = goal.unit || "";
+    const progress = target > 0 ? Math.round((currentValue / target) * 100) : 0;
+    const remaining = Math.max(0, target - currentValue);
+
+    const isPercent = unit === "%" || unit.toLowerCase() === "percent" || unit.toLowerCase() === "percentage";
+    const unitStr = unit ? (isPercent ? "%" : ` ${unit}`) : "";
+
+    let displayLabels = {};
+    if (isPercent) {
+      displayLabels = {
+        target: `${target}%`,
+        current: `${currentValue}%`,
+        achieved: `${Math.min(100, progress)}%`,
+        remaining: `${remaining}% remaining`,
+        fraction: `${currentValue}% / ${target}%`
+      };
+    } else {
+      displayLabels = {
+        target: `${target}${unitStr}`,
+        current: `${currentValue}${unitStr}`,
+        achieved: `${Math.min(100, progress)}%`,
+        remaining: `${remaining}${unitStr} remaining`,
+        fraction: `${currentValue} / ${target}${unitStr}`
+      };
+    }
+
+    result[scope] = {
+      ...goal,
+      title,
+      target,
+      currentValue,
+      progress: Math.min(100, progress),
+      unit,
+      remaining,
+      status: progress >= 100 ? "Completed" : "In Progress",
+      displayLabels
+    };
+  });
+
+  return result;
 };

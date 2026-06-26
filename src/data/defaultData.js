@@ -18,33 +18,13 @@ const createActivityLog = () => {
   return values;
 };
 
-export const roadmapBlueprint = {
-  "Product Management": [
-    "Product Lifecycle",
-    "Agile",
-    "Scrum",
-    "User Stories",
-    "Product Metrics",
-    "Prioritization",
-  ],
-  Communication: ["English Speaking", "Presentation", "Stakeholder Management"],
-  SQL: ["SELECT", "WHERE", "JOINS", "GROUP BY", "Window Functions"],
-  "Data Analytics": ["Excel", "Power BI", "KPIs", "Funnels", "Retention"],
-  "AI for Product Managers": [
-    "Prompt Engineering",
-    "LLM Basics",
-    "AI Products",
-    "AI Agents",
-    "AI Workflows",
-  ],
-  "UI/UX": ["User Research", "Wireframing", "User Journeys", "Usability Testing"],
-};
+
 
 export const createDefaultUserData = (user = {}) => ({
-  goalPlan: {
-    currentMonth: "Complete SQL dashboard case study",
-    completion: 0,
-    targetDate: "2026-09-30",
+  goals: {
+    monthly: null,
+    quarterly: null,
+    yearly: null,
   },
   planner: {
     [getTodayKey()]: {
@@ -66,18 +46,7 @@ export const createDefaultUserData = (user = {}) => ({
       ],
     },
   },
-  roadmap: Object.fromEntries(
-    Object.entries(roadmapBlueprint).map(([category, topics]) => [
-      category,
-      topics.map((topic, index) => ({
-        id: generateId("topic"),
-        name: topic,
-        completed: false,
-        progress: 0,
-        notes: "Add one applied exercise and connect the concept to a project artifact.",
-      })),
-    ]),
-  ),
+
   skills: [
     { id: generateId("skill"), name: "Product Thinking", level: "Beginner", progress: 0, focusHours: 0 },
     { id: generateId("skill"), name: "SQL", level: "Beginner", progress: 0, focusHours: 0 },
@@ -161,21 +130,6 @@ export const createDefaultUserData = (user = {}) => ({
   activityLog: [],
   achievements: [],
   calendarEvents: [],
-  metricsSnapshot: {
-    weeklyStudyHours: [0, 0, 0, 0, 0, 0, 0],
-    monthlyCompletion: [
-      { name: "Jan", completion: 0 },
-      { name: "Feb", completion: 0 },
-      { name: "Mar", completion: 0 },
-      { name: "Apr", completion: 0 },
-      { name: "May", completion: 0 },
-      { name: "Jun", completion: 0 },
-    ],
-  },
-  statsSeed: {
-    readiness: 0,
-    studyHours: 0,
-  },
   profileMeta: {
     careerGoal: user.careerGoal || "Land a product internship in 2026",
     targetRole: user.targetRole || "Associate Product Manager",

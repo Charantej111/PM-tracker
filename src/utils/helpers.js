@@ -101,3 +101,23 @@ export const getWeekStartKey = (date = new Date()) => {
   return formatDateKey(monday);
 };
 
+export const normalizeUrl = (url) => {
+  const trimmed = (url || "").trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
+
+export const formatReviewReflection = (review) => {
+  if (!review) return [];
+  return [
+    { label: "Learned", value: review.learned || review.wins || "" },
+    { label: "Challenge", value: review.challenge || review.challenges || "" },
+    { label: "Improved", value: review.improved || review.improvements || "" },
+    { label: "Focus Next Week", value: review.focusNextWeek || review.next_focus || "" },
+  ];
+};
+
+

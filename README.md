@@ -20,15 +20,16 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
    - Automatic theme detection and profile settings sync.
 
 2. **Core Dashboard**
-   - **Daily Streak Tracker**: Tracks consecutive days studied; starts at `0` and grows dynamically upon daily check-in.
+   - **Daily Streak Tracker**: Tracks consecutive days studied; tracks activity log and grows dynamically upon daily check-in.
    - **Activity Heatmap**: Tracks study frequency logs over the year.
    - **Achievements Grid**: Unlocks milestone badges (e.g. 7-day, 14-day streaks, completed projects) which dynamically appear in the user profile page.
-   - **Motivation Widget**: Shows daily target metrics.
+   - **Generic Goals System**: Supports custom Goal Titles, Target Values, Current Values, and custom units (e.g. `Hours`, `Projects`, `%`). Automatically derives progress percentages and remaining units.
 
 3. **Projects Kanban Board**
    - Drag-and-drop columns (`To Do`, `In Progress`, `Completed`).
    - Project creation, editing, and deletion modals.
-   - local draft note editing with a safe **Save** button (decoupled from live typing to avoid keystroke lag).
+   - Supports external normalized project links.
+   - Local draft note editing with a safe **Save** button (decoupled from live typing to avoid keystroke lag).
 
 4. **Interactive Career Calendar**
    - Complete scheduling board supporting event creation, deletion, dragging, and completion marking.
@@ -49,6 +50,28 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
 
 ---
 
+## 🛠️ Quality Improvements & Architectural Reliability
+
+1. **URL Normalization & Safe Links**
+   - Unified `normalizeUrl(url)` helper automatically corrects input formats (e.g. prepends `https://` if missing).
+   - External links (in Projects and Resources) safely render with `target="_blank" rel="noopener noreferrer"` targets, displaying conditional link buttons only if a link is provided.
+
+2. **Weekly Reflections Schema Mapping**
+   - Centralized mapping via `formatReviewReflection(review)` bridges old and new DB structures (`wins`/`learned`, `challenges`/`challenge`, `improvements`/`improved`, `next_focus`/`focusNextWeek`).
+   - The Weekly Review card and PDF report render identical reflection layouts.
+   - Key metrics are derived dynamically from active stats.
+
+3. **Optimistic Database Sync & Rollbacks**
+   - Subtopic updates under `updateSubTopic()` calculate a single normalized payload upfront, applying the exact same payload to React state and Supabase queries.
+   - State rollbacks are triggered on API failure to restore the pre-update state, preventing data synchronization drift.
+
+4. **High-Resolution PDF Report Engine**
+   - Modern Executive Summary layout with dynamic Insights, Recommendations, and vector-drawn progress bars.
+   - **Vector Chart Legend**: Computes total counts and percentages dynamically below the project status donut chart.
+   - **Empty State**: Hides chart components if zero projects exist and prints `"No project data available for visualization."` cleanly instead.
+
+---
+
 ## 📁 Repository Structure
 
 ```text
@@ -59,7 +82,7 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
 │   ├── main.jsx                # Application root with context & error boundaries
 │   ├── index.css               # Global tailwind tokens and Light/Dark CSS variables
 │   ├── charts/
-│   │   └── AnalyticsCharts.jsx # Custom SVG analytics charts
+│   │   └── ReportCharts.jsx    # Custom SVG analytics charts
 │   ├── components/             # Reusable UI (Buttons, Cards, PageShell, Inputs, etc.)
 │   ├── context/
 │   │   ├── AppContext.jsx      # Global React Context provider & state handlers
@@ -71,7 +94,7 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
 │   │   └── AppLayout.jsx       # Standard dashboard shell (Sidebar, Header, Main Outlet)
 │   ├── pages/                  # All page containers (Dashboard, Projects, Calendar, Notes...)
 │   └── utils/
-│       └── helpers.js          # Helper utilities (Date utilities, tag parsers, initials)
+│       ├── helpers.js          # Helper utilities (Date utilities, tag-parsers, normalization)
 ├── netlify.toml                # Netlify SPA redirect rewrites config
 ├── tailwind.config.js          # Tailwind styling overrides
 └── package.json                # Project dependencies and script runner configurations
@@ -79,18 +102,18 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
 
 ---
 
-## 🛠️ Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 Make sure you have [Node.js](https://nodejs.org/) installed.
 
 ### Installation
-1. Clone the repository and install the dependencies using `npm` (or `pnpm`/`yarn`):
+1. Clone the repository and install the dependencies:
 ```bash
 npm install
 ```
 
-2. Set up your Supabase environment variables in a `.env` file:
+2. Set up your Supabase environment variables in a `.env` file at the root directory:
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key

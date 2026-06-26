@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { fromDbRows, toMainTopicRow, CATEGORY_SENTINEL } from "./roadmapAdapter";
 
 // Helper to get current authenticated user ID
 const getUserId = async () => {
@@ -323,26 +324,76 @@ export const db = {
       const { data, error } = await supabase
         .from("roadmap_progress")
         .select("*")
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .order("sort_order", { ascending: true });
 
       if (error) throw error;
 
-      return data.map((rp) => ({
-        id: rp.topic_id,
-        category: rp.category,
-        name: rp.topic_title || "",
-        completed: rp.completed || false,
-        progress: rp.progress || 0,
-        notes: rp.notes || "",
-      }));
+      return fromDbRows(data);
     },
 
-    async updateRoadmapProgress(category, topicId, updates) {
+    async createMainTopic(name, sortOrder = 0) {
+      const userId = await getUserId();
+      const { data, error } = await supabase
+        .from("roadmap_progress")
+        .insert(toMainTopicRow(userId, name, sortOrder))
+        .select()
+        .single();
+        
+      if (error) throw error;
+      return data;
+    },
+    
+    async renameMainTopic(oldCategory, newName) {
+      const userId = await getUserId();
+      const { error } = await supabase
+        .from("roadmap_progress")
+        .update({ category: newName, updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("category", oldCategory);
+        
+      if (error) throw error;
+    },
+
+    async deleteMainTopic(category) {
+      const userId = await getUserId();
+      const { error } = await supabase
+        .from("roadmap_progress")
+        .delete()
+        .eq("user_id", userId)
+        .eq("category", category);
+
+      if (error) throw error;
+    },
+    
+    async createSubTopic(category, topicId, name, sortOrder = 0, priority = "Medium") {
       const userId = await getUserId();
       const payload = {
         user_id: userId,
         category,
         topic_id: topicId,
+        topic_title: name,
+        completed: false,
+        progress: 0,
+        notes: "",
+        estimated_hours: null,
+        priority: priority,
+        sort_order: sortOrder,
+        updated_at: new Date().toISOString(),
+      };
+      const { data, error } = await supabase
+        .from("roadmap_progress")
+        .insert(payload)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      return data;
+    },
+
+    async updateSubTopic(category, topicId, updates) {
+      const userId = await getUserId();
+      const payload = {
         updated_at: new Date().toISOString(),
       };
 
@@ -350,6 +401,9 @@ export const db = {
       if (updates.progress !== undefined) payload.progress = updates.progress;
       if (updates.name !== undefined) payload.topic_title = updates.name;
       if (updates.notes !== undefined) payload.notes = updates.notes;
+      if (updates.estimatedHours !== undefined) payload.estimated_hours = updates.estimatedHours;
+      if (updates.priority !== undefined) payload.priority = updates.priority;
+      if (updates.sortOrder !== undefined) payload.sort_order = updates.sortOrder;
 
       const { data: existing } = await supabase
         .from("roadmap_progress")
@@ -366,6 +420,9 @@ export const db = {
           .eq("id", existing.id);
         if (error) throw error;
       } else {
+        payload.user_id = userId;
+        payload.category = category;
+        payload.topic_id = topicId;
         const { error } = await supabase
           .from("roadmap_progress")
           .insert(payload);
@@ -373,7 +430,7 @@ export const db = {
       }
     },
 
-    async deleteRoadmapProgress(category, topicId) {
+    async deleteSubTopic(category, topicId) {
       const userId = await getUserId();
       const { error } = await supabase
         .from("roadmap_progress")
@@ -384,6 +441,18 @@ export const db = {
 
       if (error) throw error;
     },
+    
+    async reorderTopics(rows) {
+      // rows: Array of { id, sort_order }
+      // Requires multiple requests or a batch update RPC. Using multiple updates for now
+      // since it's a small array.
+      for (const row of rows) {
+         await supabase
+          .from("roadmap_progress")
+          .update({ sort_order: row.sort_order })
+          .eq("id", row.id);
+      }
+    }
   },
 
   resources: {

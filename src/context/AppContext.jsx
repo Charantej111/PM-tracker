@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, useRef } from "react";
 import Confetti from "react-confetti";
-import { accentPalette, createDefaultUserData, roadmapBlueprint } from "../data/defaultData";
+import { accentPalette, createDefaultUserData } from "../data/defaultData";
+import { computeRoadmapMetrics } from "../utils/roadmapMetrics";
+import { computeGoalMetrics } from "../utils/reportUtils";
 import { useAuth } from "./AuthContext";
 import { db } from "../lib/db";
 import { supabase } from "../lib/supabaseClient";
@@ -67,15 +69,6 @@ const calculateStreak = (activityLog = []) => {
   return streak;
 };
 
-const calculateOverallProgress = (userData) => {
-  const roadmapTopics = Object.values(userData?.roadmap || {}).flat().filter(Boolean);
-  const roadmapProgress = roadmapTopics.length > 0 ? average(roadmapTopics.map((topic) => topic.progress || 0)) : 0;
-  const skillProgress = (userData?.skills?.length || 0) > 0 ? average(userData.skills.map((skill) => skill.progress || 0)) : 0;
-  const projectProgress = (userData?.projects?.length || 0) > 0 ? average(userData.projects.map((project) => project.progress || 0)) : 0;
-  const portfolioProgress = (userData?.portfolioGoals?.length || 0) > 0 ? average(userData.portfolioGoals.map((goal) => goal.progress || 0)) : 0;
-  return Math.round((roadmapProgress + skillProgress + projectProgress + portfolioProgress) / 4);
-};
-
 const calculatePlannerCompletion = (plannerDay = {}) => {
   const tasks = Object.values(plannerDay).flat().filter(Boolean);
   return {
@@ -87,88 +80,62 @@ const calculatePlannerCompletion = (plannerDay = {}) => {
 const deriveDashboardMetrics = (user, userData) => {
   const todayPlan = userData?.planner?.[getTodayKey()] || {};
   const plannerStats = calculatePlannerCompletion(todayPlan);
-  const weeklyHours = userData?.learning?.items?.reduce((sum, item) => sum + (item.timeSpent || 0), 0) || 0;
+  
+  const roadmapMetrics = computeRoadmapMetrics(userData?.roadmap);
+  
+  // Weekly hours combine Learning Hub explicit hours + Roadmap estimated hours completed
+  const learningHubWeekly = userData?.learning?.items?.reduce((sum, item) => sum + (item.timeSpent || 0), 0) || 0;
+  const weeklyHours = Math.round(learningHubWeekly + (roadmapMetrics.estimatedHoursCompleted || 0));
+
   const activeSkill = [...(userData?.skills || [])].sort((a, b) => (b.focusHours || 0) - (a.focusHours || 0))[0] || null;
   const nextMilestone =
     [...(userData?.portfolioGoals || [])]
       .filter((goal) => !goal.completed)
       .sort((a, b) => new Date(a.deadline || a.target_date) - new Date(b.deadline || b.target_date))[0] || null;
 
+  const skillProgress = (userData?.skills?.length || 0) > 0 ? average(userData.skills.map((skill) => skill.progress || 0)) : 0;
+  const projectProgress = (userData?.projects?.length || 0) > 0 ? average(userData.projects.map((project) => project.progress || 0)) : 0;
+  const portfolioProgress = (userData?.portfolioGoals?.length || 0) > 0 ? average(userData.portfolioGoals.map((goal) => goal.progress || 0)) : 0;
+  
+  const overallProgress = Math.round((roadmapMetrics.overallCompletionPct + skillProgress + projectProgress + portfolioProgress) / 4);
+
+  // Dynamic Weekly Study Chart Data (spread weeklyHours across the current week up to today)
+  const today = new Date().getDay();
+  const currentDayIndex = today === 0 ? 6 : today - 1; // Map Sun(0) to 6, Mon(1) to 0
+  const weeklyStudyChartData = [0, 0, 0, 0, 0, 0, 0];
+  const spread = Math.floor(weeklyHours / (currentDayIndex + 1));
+  const remainder = weeklyHours - (spread * (currentDayIndex + 1));
+  for (let i = 0; i <= currentDayIndex; i++) {
+     weeklyStudyChartData[i] = spread + (i === currentDayIndex ? remainder : 0);
+  }
+
+  // Dynamic Monthly Completion Data
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const currentMonth = new Date().getMonth();
+  const monthlyCompletionChartData = [
+    {
+      name: monthNames[currentMonth],
+      completion: overallProgress
+    }
+  ];
+
+  const goalMetrics = computeGoalMetrics(userData?.goals, roadmapMetrics, { hoursStudiedThisWeek: weeklyHours });
+
   return {
-    overallProgress: calculateOverallProgress(userData),
+    overallProgress,
+    roadmapMetrics,
+    goalMetrics,
+    weeklyStudyChartData,
+    monthlyCompletionChartData,
     currentStreak: calculateStreak(userData?.activityLog || []),
     todayCompletion: percent(plannerStats.completed, plannerStats.total),
     hoursStudiedThisWeek: weeklyHours,
     activeSkill,
     nextMilestone,
-    currentMonthGoal: userData?.goalPlan?.completion || 0,
     completedSkills: (userData?.skills || []).filter((skill) => (skill.progress || 0) >= 80).length,
     activeProjects: (userData?.projects || []).filter((project) => project.status !== "Completed").length,
-    countdownDays: daysUntil(userData?.goalPlan?.targetDate || new Date()),
     userName: user?.name || "PM Builder",
   };
-};
-
-const buildRoadmapData = (dbProgress, metadataState = {}, categories = roadmapBlueprint) => {
-  const progressMap = new Map();
-  dbProgress.forEach(rp => {
-    progressMap.set(`${rp.category}:${rp.id}`, rp);
-  });
-
-  const deletedTopics = new Set(metadataState?.deletedTopics || []);
-
-  // Build a set of all blueprint topic keys so we can identify custom topics
-  const blueprintKeys = new Set();
-  Object.entries(categories).forEach(([category, topics]) => {
-    topics.forEach(topicName => {
-      const topicId = topicName.toLowerCase().replace(/[^a-z0-9]/g, "-");
-      blueprintKeys.add(`${category}:${topicId}`);
-    });
-  });
-
-  // Start with blueprint categories
-  const result = {};
-  Object.entries(categories).forEach(([category, topics]) => {
-    result[category] = topics
-      .map((topicName) => {
-        const topicId = topicName.toLowerCase().replace(/[^a-z0-9]/g, "-");
-        const key = `${category}:${topicId}`;
-        
-        if (deletedTopics.has(key)) return null;
-
-        const record = progressMap.get(key);
-        return {
-          id: topicId,
-          name: record?.name || topicName,
-          completed: record?.completed ?? false,
-          progress: record?.progress ?? 0,
-          notes: record?.notes ?? "Add one applied exercise and connect the concept to a project artifact.",
-        };
-      })
-      .filter(Boolean);
-  });
-
-  // Append custom (non-blueprint) topics from dbProgress
-  dbProgress.forEach(rp => {
-    const key = `${rp.category}:${rp.id}`;
-    if (!blueprintKeys.has(key)) {
-      if (deletedTopics.has(key)) return;
-
-      if (!result[rp.category]) {
-        result[rp.category] = [];
-      }
-      result[rp.category].push({
-        id: rp.id,
-        name: rp.name || rp.id,
-        completed: rp.completed ?? false,
-        progress: rp.progress ?? 0,
-        notes: rp.notes ?? "Add one applied exercise and connect the concept to a project artifact.",
-        isCustom: true,
-      });
-    }
-  });
-
-  return result;
 };
 
 const useWindowSize = () => {
@@ -222,7 +189,7 @@ export const AppProvider = ({ children }) => {
   const [skillsState, setSkillsState] = useState([]);
   const [tasksState, setTasksState] = useState([]);
   const [notesState, setNotesState] = useState([]);
-  const [roadmapState, setRoadmapState] = useState([]);
+  const [roadmapState, setRoadmapState] = useState({ mainTopics: [], byCategory: {} });
   const [resourcesState, setResourcesState] = useState([]);
   const [reviewsState, setReviewsState] = useState([]);
   const [portfolioGoalsState, setPortfolioGoalsState] = useState([]);
@@ -306,7 +273,7 @@ export const AppProvider = ({ children }) => {
       setSkillsState(skillsData || []);
       setTasksState(tasksData || []);
       setNotesState(notesData || []);
-      setRoadmapState(roadmapData || []);
+      setRoadmapState(roadmapData || { mainTopics: [], byCategory: {} });
       setReviewsState(reviewsData || []);
       setResourcesState(resData || []);
       setPortfolioGoalsState(pfGoalsData || []);
@@ -499,7 +466,7 @@ export const AppProvider = ({ children }) => {
         }
 
         const metadataPayload = {
-          goalPlan: localData.goalPlan || defaultData.goalPlan,
+          goals: localData.goals || { monthly: null, quarterly: null, yearly: null },
           learning: localData.learning || defaultData.learning,
           motivation: localData.motivation || defaultData.motivation,
           settings: localData.settings || defaultData.settings,
@@ -507,8 +474,6 @@ export const AppProvider = ({ children }) => {
           activityLog: localData.activityLog || defaultData.activityLog,
           achievements: localData.achievements || defaultData.achievements,
           calendarEvents: localData.calendarEvents || defaultData.calendarEvents,
-          metricsSnapshot: localData.metricsSnapshot || defaultData.metricsSnapshot,
-          statsSeed: localData.statsSeed || defaultData.statsSeed,
           migrated: true,
         };
 
@@ -593,7 +558,7 @@ export const AppProvider = ({ children }) => {
         await supabase.from("portfolio_goals").insert(defaultPortfolio);
 
         const metadataPayload = {
-          goalPlan: defaultData.goalPlan,
+          goals: { monthly: null, quarterly: null, yearly: null },
           learning: defaultData.learning,
           motivation: defaultData.motivation,
           settings: defaultData.settings,
@@ -601,8 +566,6 @@ export const AppProvider = ({ children }) => {
           activityLog: defaultData.activityLog,
           achievements: defaultData.achievements,
           calendarEvents: defaultData.calendarEvents,
-          metricsSnapshot: defaultData.metricsSnapshot,
-          statsSeed: defaultData.statsSeed,
           migrated: true,
         };
 
@@ -628,7 +591,7 @@ export const AppProvider = ({ children }) => {
       setSkillsState([]);
       setTasksState([]);
       setNotesState([]);
-      setRoadmapState([]);
+      setRoadmapState({ mainTopics: [], byCategory: {} });
       setResourcesState([]);
       setReviewsState([]);
       setPortfolioGoalsState([]);
@@ -651,11 +614,11 @@ export const AppProvider = ({ children }) => {
       }
     });
 
-    const roadmap = buildRoadmapData(roadmapState, metadataState);
+    const roadmap = roadmapState;
     const meta = metadataState || {};
 
     return {
-      goalPlan: meta.goalPlan || { currentMonth: "Complete SQL dashboard case study", completion: 0, targetDate: "2026-09-30" },
+      goals: meta.goals || { monthly: null, quarterly: null, yearly: null },
       planner,
       roadmap,
       skills: skillsState,
@@ -690,24 +653,30 @@ export const AppProvider = ({ children }) => {
       activityLog: meta.activityLog || [],
       achievements: meta.achievements || [],
       calendarEvents: meta.calendarEvents || [],
-      metricsSnapshot: meta.metricsSnapshot || {
-        weeklyStudyHours: [0, 0, 0, 0, 0, 0, 0],
-        monthlyCompletion: [
-          { name: "Jan", completion: 0 },
-          { name: "Feb", completion: 0 },
-          { name: "Mar", completion: 0 },
-          { name: "Apr", completion: 0 },
-          { name: "May", completion: 0 },
-          { name: "Jun", completion: 0 },
-        ],
-      },
-      statsSeed: meta.statsSeed || { readiness: 0, studyHours: 0 },
       profileMeta: meta.profileMeta || {
         careerGoal: currentUser?.careerGoal || "Land a product internship in 2026",
         targetRole: currentUser?.targetRole || "Associate Product Manager",
       },
     };
   }, [currentUser, projectsState, skillsState, tasksState, notesState, roadmapState, metadataState, reviewsState, resourcesState, portfolioGoalsState, weeklyGoalState]);
+
+  const updateGoal = (scope, payload) => {
+    updateMetadata((prev) => {
+      const existing = prev.goals?.[scope] || {};
+      return {
+        ...(prev || {}),
+        goals: {
+          ...(prev.goals || {}),
+          [scope]: {
+            ...existing,
+            ...payload,
+            createdAt: existing.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        }
+      };
+    });
+  };
 
   const updateMetadata = (nextValOrUpdater) => {
     if (!currentUser) return;
@@ -862,69 +831,195 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const updateRoadmapTopic = async (category, topicId, updates) => {
-    const existingTopic = roadmapState.find(t => t.topic_id === topicId || t.id === topicId);
-    const prevCompleted = existingTopic?.completed || false;
-    const prevProgress = existingTopic?.progress || 0;
-    const prevNotes = existingTopic?.notes || "";
+  const addMainTopic = async (name) => {
+    try {
+      const order = roadmapState.mainTopics.length;
+      const dbRow = await db.roadmap.createMainTopic(name, order);
+      setRoadmapState((prev) => ({
+        ...prev,
+        mainTopics: [...prev.mainTopics, { id: dbRow.id, name, sortOrder: order }],
+        byCategory: { ...prev.byCategory, [name]: [] }
+      }));
+      showToast("Main Topic created", `Added "${name}"`);
+    } catch (err) {
+      showToast("Sync Error", err.message, "error");
+    }
+  };
 
-    setRoadmapState(prev => {
-      const found = prev.some(t => t.topic_id === topicId || t.id === topicId);
-      if (found) {
-        return prev.map(t => (t.topic_id === topicId || t.id === topicId) ? { ...t, ...updates } : t);
-      } else {
-        return [...prev, { id: topicId, topic_id: topicId, category, name: updates.name || "", completed: updates.completed || false, progress: updates.progress || 0, notes: updates.notes || "" }];
+  const renameMainTopic = async (oldName, newName) => {
+    if (oldName === newName) return;
+    
+    // Optimistic update
+    setRoadmapState((prev) => {
+      const updatedTopics = prev.mainTopics.map(t => t.name === oldName ? { ...t, name: newName } : t);
+      const updatedByCategory = { ...prev.byCategory };
+      updatedByCategory[newName] = updatedByCategory[oldName] || [];
+      delete updatedByCategory[oldName];
+      return { mainTopics: updatedTopics, byCategory: updatedByCategory };
+    });
+    
+    try {
+      await db.roadmap.renameMainTopic(oldName, newName);
+    } catch (err) {
+      // Revert in full load to avoid complex rollback logic
+      loadUserData(currentUser.id);
+      showToast("Sync Error", err.message, "error");
+    }
+  };
+
+  const deleteMainTopic = async (name) => {
+    // Optimistic
+    setRoadmapState((prev) => {
+      const updatedTopics = prev.mainTopics.filter(t => t.name !== name);
+      const updatedByCategory = { ...prev.byCategory };
+      delete updatedByCategory[name];
+      return { mainTopics: updatedTopics, byCategory: updatedByCategory };
+    });
+    try {
+      await db.roadmap.deleteMainTopic(name);
+      showToast("Main Topic deleted", `Removed "${name}"`);
+    } catch (err) {
+      loadUserData(currentUser.id);
+      showToast("Sync Error", err.message, "error");
+    }
+  };
+
+  const reorderMainTopics = async (reorderedMainTopics) => {
+    setRoadmapState(prev => ({ ...prev, mainTopics: reorderedMainTopics }));
+    const dbPayload = reorderedMainTopics
+      .filter(t => !t.id.startsWith("virtual-"))
+      .map((t, idx) => ({ id: t.id, sort_order: idx }));
+    try {
+      await db.roadmap.reorderTopics(dbPayload);
+    } catch (err) {
+      showToast("Sync Error", err.message, "error");
+    }
+  };
+
+  const addSubTopic = async (category, name) => {
+    const topicId = generateId("topic");
+    const order = (roadmapState.byCategory[category] || []).length;
+    
+    // Optimistic
+    const newSubTopic = {
+      id: topicId,
+      category,
+      name,
+      completed: false,
+      progress: 0,
+      status: "Not Started",
+      notes: "",
+      estimatedHours: null,
+      priority: "Medium",
+      sortOrder: order,
+      updatedAt: new Date().toISOString()
+    };
+    
+    setRoadmapState(prev => ({
+      ...prev,
+      byCategory: {
+        ...prev.byCategory,
+        [category]: [...(prev.byCategory[category] || []), newSubTopic]
       }
+    }));
+    
+    try {
+      const dbRow = await db.roadmap.createSubTopic(category, topicId, name, order, "Medium");
+      
+      // Update with real db row ID just in case
+      setRoadmapState(prev => {
+        const list = prev.byCategory[category] || [];
+        const updatedList = list.map(t => t.id === topicId ? { ...t, row_id: dbRow.id } : t);
+        return { ...prev, byCategory: { ...prev.byCategory, [category]: updatedList } };
+      });
+      
+      showToast("Sub Topic added", `Added "${name}" to ${category}`);
+    } catch (err) {
+      setRoadmapState(prev => ({
+        ...prev,
+        byCategory: {
+          ...prev.byCategory,
+          [category]: (prev.byCategory[category] || []).filter(t => t.id !== topicId)
+        }
+      }));
+      showToast("Sync Error", err.message, "error");
+    }
+  };
+
+  const updateSubTopic = async (category, topicId, updates) => {
+    const currentList = roadmapState.byCategory[category] || [];
+    const existing = currentList.find(t => t.id === topicId);
+    if (!existing) return;
+
+    const normalized = { ...updates };
+    if (updates.completed !== undefined && updates.progress === undefined) {
+      normalized.progress = updates.completed ? 100 : (existing.progress === 100 ? 0 : existing.progress);
+      normalized.status = updates.completed ? "Completed" : (normalized.progress === 0 ? "Not Started" : "Practicing");
+    }
+    if (updates.progress !== undefined) {
+      normalized.completed = updates.progress === 100;
+      if (updates.progress === 0) normalized.status = "Not Started";
+      else if (updates.progress > 0 && updates.progress <= 30) normalized.status = "Learning";
+      else if (updates.progress > 30 && updates.progress < 100) normalized.status = "Practicing";
+      else normalized.status = "Completed";
+    }
+
+    const completedTransition = !existing.completed && normalized.progress === 100;
+
+    // Optimistic Update
+    setRoadmapState(prev => {
+      const list = prev.byCategory[category] || [];
+      const updatedList = list.map(t => t.id === topicId ? { ...t, ...normalized } : t);
+      return { ...prev, byCategory: { ...prev.byCategory, [category]: updatedList } };
     });
 
-    if (updates.completed && !prevCompleted) {
-      triggerCelebration("Topic completed", "Another PM building block is locked in.");
+    if (completedTransition) {
+      triggerCelebration("Topic completed", "Great progress on your roadmap!");
     }
 
     debounceDb(`roadmap-${category}-${topicId}`, async () => {
       try {
-        await db.roadmap.updateRoadmapProgress(category, topicId, updates);
+        await db.roadmap.updateSubTopic(category, topicId, normalized);
       } catch (err) {
-        setRoadmapState(prev => prev.map(t => (t.topic_id === topicId || t.id === topicId) ? { ...t, completed: prevCompleted, progress: prevProgress, notes: prevNotes } : t));
+        // Rollback state on error
+        setRoadmapState(prev => {
+          const list = prev.byCategory[category] || [];
+          const updatedList = list.map(t => t.id === topicId ? existing : t);
+          return { ...prev, byCategory: { ...prev.byCategory, [category]: updatedList } };
+        });
         showToast("Sync Error", err.message, "error");
       }
     }, 800);
   };
 
-  const addRoadmapTopic = async (category, name) => {
-    const topicId = generateId("topic");
-    const newTopic = {
-      completed: false,
-      progress: 0,
-      name,
-      notes: "Add one applied exercise and connect the concept to a project artifact.",
-    };
-    setRoadmapState(prev => [...prev, { id: topicId, topic_id: topicId, category, ...newTopic }]);
+  const deleteSubTopic = async (category, topicId) => {
+    setRoadmapState(prev => ({
+      ...prev,
+      byCategory: {
+        ...prev.byCategory,
+        [category]: (prev.byCategory[category] || []).filter(t => t.id !== topicId)
+      }
+    }));
     try {
-      await db.roadmap.updateRoadmapProgress(category, topicId, newTopic);
-      showToast("Topic added", `Added "${name}" to ${category}.`);
+      await db.roadmap.deleteSubTopic(category, topicId);
+      showToast("Sub Topic deleted", "Removed the sub topic.");
     } catch (err) {
-      setRoadmapState(prev => prev.filter(t => t.topic_id !== topicId));
       showToast("Sync Error", err.message, "error");
     }
   };
 
-  const deleteRoadmapTopic = async (category, topicId) => {
-    const key = `${category}:${topicId}`;
-    
-    updateMetadata((prev) => ({
+  const reorderSubTopics = async (category, reorderedList) => {
+    setRoadmapState(prev => ({
       ...prev,
-      deletedTopics: [...(prev.deletedTopics || []), key],
+      byCategory: { ...prev.byCategory, [category]: reorderedList }
     }));
     
-    const removedItems = roadmapState.filter(t => t.category === category && (t.topic_id === topicId || t.id === topicId));
-    setRoadmapState(prev => prev.filter(t => !(t.category === category && (t.topic_id === topicId || t.id === topicId))));
-
+    const dbPayload = reorderedList
+      .filter(t => t.row_id)
+      .map((t, idx) => ({ id: t.row_id, sort_order: idx }));
     try {
-      await db.roadmap.deleteRoadmapProgress(category, topicId);
-      showToast("Topic deleted", "Removed the topic from your roadmap.");
+      await db.roadmap.reorderTopics(dbPayload);
     } catch (err) {
-      setRoadmapState(prev => [...prev, ...removedItems]);
       showToast("Sync Error", err.message, "error");
     }
   };
@@ -1297,7 +1392,7 @@ export const AppProvider = ({ children }) => {
       setSkillsState([]);
       setTasksState([]);
       setNotesState([]);
-      setRoadmapState([]);
+      setRoadmapState({ mainTopics: [], byCategory: {} });
       setResourcesState([]);
       setReviewsState([]);
       setPortfolioGoalsState([]);
@@ -1330,7 +1425,7 @@ export const AppProvider = ({ children }) => {
       await supabase.from("portfolio_goals").insert(defaultPortfolio);
 
       const freshMeta = {
-        goalPlan: { currentMonth: "Set a monthly target", completion: 0, targetDate: new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString().split("T")[0] },
+        goals: { monthly: null, quarterly: null, yearly: null },
         learning: { weeklyGoalHours: 18, items: [] },
         motivation: { quotes: defaultData.motivation.quotes },
         settings: defaultData.settings,
@@ -1338,18 +1433,6 @@ export const AppProvider = ({ children }) => {
         activityLog: [],
         achievements: [],
         calendarEvents: [],
-        metricsSnapshot: {
-          weeklyStudyHours: [0, 0, 0, 0, 0, 0, 0],
-          monthlyCompletion: [
-            { name: "Jan", completion: 0 },
-            { name: "Feb", completion: 0 },
-            { name: "Mar", completion: 0 },
-            { name: "Apr", completion: 0 },
-            { name: "May", completion: 0 },
-            { name: "Jun", completion: 0 },
-          ],
-        },
-        statsSeed: { readiness: 0, studyHours: 0 },
         profileMeta: {
           careerGoal: "",
           targetRole: "",
@@ -1512,9 +1595,14 @@ export const AppProvider = ({ children }) => {
       updatePlannerTask,
       addPlannerTask,
       deletePlannerTask,
-      updateRoadmapTopic,
-      addRoadmapTopic,
-      deleteRoadmapTopic,
+      addMainTopic,
+      renameMainTopic,
+      deleteMainTopic,
+      reorderMainTopics,
+      addSubTopic,
+      updateSubTopic,
+      deleteSubTopic,
+      reorderSubTopics,
       updateSkill,
       addSkill,
       deleteSkill,
@@ -1536,6 +1624,7 @@ export const AppProvider = ({ children }) => {
       deletePortfolioGoal,
       updateWeeklyGoalTarget,
       weeklyGoalState,
+      updateGoal,
       updateSettings,
       resetProgress,
       exportData,

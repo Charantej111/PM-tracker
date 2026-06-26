@@ -7,6 +7,7 @@ import InputField from "../components/InputField";
 import EmptyState from "../components/EmptyState";
 import PageShell from "../components/PageShell";
 import { useAppContext } from "../context/AppContext";
+import { normalizeUrl } from "../utils/helpers";
 
 const categories = ["All", "Courses", "YouTube", "Articles", "Books", "Templates", "LinkedIn Learning"];
 
@@ -58,7 +59,7 @@ export default function ResourcesPage() {
 
     addResource({
       title: newTitle.trim(),
-      url: newUrl.trim(),
+      url: normalizeUrl(newUrl),
       category: newCategory,
       type: typeVal,
     });
