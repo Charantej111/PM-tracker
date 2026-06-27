@@ -66,7 +66,7 @@ function SortableSubTopicRow({ category, topic, updateSubTopic, deleteSubTopic }
   const [editedName, setEditedName] = useState(topic.name);
   const [localNotes, setLocalNotes] = useState(topic.notes || "");
   const [isNotesDirty, setIsNotesDirty] = useState(false);
-  
+
   // Local state for smooth slider dragging
   const [localProgress, setLocalProgress] = useState(topic.progress);
 
@@ -103,9 +103,8 @@ function SortableSubTopicRow({ category, topic, updateSubTopic, deleteSubTopic }
     <div
       ref={setNodeRef}
       style={style}
-      className={`rounded-[28px] border border-slate-200/80 p-5 dark:border-white/10 bg-white/50 dark:bg-black/20 ${
-        isDragging ? "opacity-50 ring-2 ring-accent" : ""
-      }`}
+      className={`rounded-[28px] border border-slate-200/80 p-5 dark:border-white/10 bg-white/50 dark:bg-black/20 ${isDragging ? "opacity-50 ring-2 ring-accent" : ""
+        }`}
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="max-w-xl flex-1">
@@ -198,22 +197,22 @@ function SortableSubTopicRow({ category, topic, updateSubTopic, deleteSubTopic }
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-slate-500 font-medium w-24">Est. Hours:</span>
             <input
-               type="number"
-               min="0"
-               step="0.5"
-               value={topic.estimatedHours || ""}
-               onChange={(e) => updateSubTopic(category, topic.id, { estimatedHours: parseFloat(e.target.value) || null })}
-               placeholder="Optional"
-               className="input-shell flex-1 py-1 px-2 text-xs"
+              type="number"
+              min="0"
+              step="0.5"
+              value={topic.estimatedHours || ""}
+              onChange={(e) => updateSubTopic(category, topic.id, { estimatedHours: parseFloat(e.target.value) || null })}
+              placeholder="Optional"
+              className="input-shell flex-1 py-1 px-2 text-xs"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-slate-500 font-medium w-24">Priority:</span>
             <select
-               value={topic.priority}
-               onChange={(e) => updateSubTopic(category, topic.id, { priority: e.target.value })}
-               className="input-shell flex-1 py-1 px-2 text-xs bg-transparent"
+              value={topic.priority}
+              onChange={(e) => updateSubTopic(category, topic.id, { priority: e.target.value })}
+              className="input-shell flex-1 py-1 px-2 text-xs bg-transparent"
             >
               <option value="Low">Low</option>
               <option value="Medium">Medium</option>
@@ -296,12 +295,12 @@ function AddTopicForm({ category, addSubTopic }) {
   );
 }
 
-function SortableMainTopicCard({ 
-  mainTopic, 
-  topics, 
-  isOpen, 
-  setOpen, 
-  renameMainTopic, 
+function SortableMainTopicCard({
+  mainTopic,
+  topics,
+  isOpen,
+  setOpen,
+  renameMainTopic,
   deleteMainTopic,
   updateSubTopic,
   deleteSubTopic,
@@ -325,7 +324,7 @@ function SortableMainTopicCard({
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(mainTopic.name);
-  
+
   const completedCount = topics.filter(t => t.completed).length;
   const categoryProgress = topics.length > 0 ? Math.round(topics.reduce((acc, t) => acc + t.progress, 0) / topics.length) : 0;
 
@@ -355,47 +354,47 @@ function SortableMainTopicCard({
     <div ref={setNodeRef} style={style} className={`${isDragging ? 'opacity-50' : ''}`}>
       <Card hover={false} className="overflow-hidden">
         <div className="flex items-center gap-2">
-           <div
-              {...attributes}
-              {...listeners}
-              className="cursor-grab text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-            >
-              <GripVertical className="h-5 w-5" />
-           </div>
-           
-           <div className="flex-1 flex w-full items-center justify-between gap-4">
-             {isEditing ? (
-               <div className="flex items-center gap-2 w-full max-w-sm flex-wrap">
-                 <input
-                    type="text"
-                    value={editedName}
-                    onChange={(e) => setEditedName(e.target.value)}
-                    className="input-shell py-1 px-3 flex-1 min-w-[150px]"
-                    autoFocus
-                 />
-                 <button onClick={handleRename} className="btn-primary py-1 px-3 text-xs">Save</button>
-                 <button onClick={() => { setEditedName(mainTopic.name); setIsEditing(false); }} className="text-sm text-slate-500 px-2">Cancel</button>
-               </div>
-             ) : (
-               <div className="flex flex-col text-left flex-1 cursor-pointer" onClick={() => setOpen(isOpen ? "" : mainTopic.name)}>
-                 <div className="flex items-center gap-3">
-                   <h3 className="text-xl font-semibold text-ink dark:text-white">{mainTopic.name}</h3>
-                   <button onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} className="text-xs text-accent hover:underline hidden md:block">Rename</button>
-                   <button onClick={(e) => { e.stopPropagation(); if (window.confirm("Delete this main topic and all its sub topics?")) deleteMainTopic(mainTopic.name); }} className="text-xs text-rose-500 hover:underline hidden md:block">Delete</button>
-                 </div>
-                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                   {completedCount} of {topics.length} sub topics completed
-                 </p>
-               </div>
-             )}
-             
-             <button onClick={() => setOpen(isOpen ? "" : mainTopic.name)} className="flex items-center gap-3">
-                <div className="rounded-full bg-accent-soft/10 px-3 py-1 text-xs font-semibold text-accent">
-                  {categoryProgress}%
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+          >
+            <GripVertical className="h-5 w-5" />
+          </div>
+
+          <div className="flex-1 flex w-full items-center justify-between gap-4">
+            {isEditing ? (
+              <div className="flex items-center gap-2 w-full max-w-sm flex-wrap">
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="input-shell py-1 px-3 flex-1 min-w-[150px]"
+                  autoFocus
+                />
+                <button onClick={handleRename} className="btn-primary py-1 px-3 text-xs">Save</button>
+                <button onClick={() => { setEditedName(mainTopic.name); setIsEditing(false); }} className="text-sm text-slate-500 px-2">Cancel</button>
+              </div>
+            ) : (
+              <div className="flex flex-col text-left flex-1 cursor-pointer" onClick={() => setOpen(isOpen ? "" : mainTopic.name)}>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-semibold text-ink dark:text-white">{mainTopic.name}</h3>
+                  <button onClick={(e) => { e.stopPropagation(); setIsEditing(true); }} className="text-xs text-accent hover:underline hidden md:block">Rename</button>
+                  <button onClick={(e) => { e.stopPropagation(); if (window.confirm("Delete this main topic and all its sub topics?")) deleteMainTopic(mainTopic.name); }} className="text-xs text-rose-500 hover:underline hidden md:block">Delete</button>
                 </div>
-                <ChevronDown className={`h-5 w-5 transition ${isOpen ? "rotate-180" : ""}`} />
-             </button>
-           </div>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {completedCount} of {topics.length} sub topics completed
+                </p>
+              </div>
+            )}
+
+            <button onClick={() => setOpen(isOpen ? "" : mainTopic.name)} className="flex items-center gap-3">
+              <div className="rounded-full bg-accent-soft/10 px-3 py-1 text-xs font-semibold text-accent">
+                {categoryProgress}%
+              </div>
+              <ChevronDown className={`h-5 w-5 transition ${isOpen ? "rotate-180" : ""}`} />
+            </button>
+          </div>
         </div>
 
         {isOpen && (
@@ -429,25 +428,25 @@ function SortableMainTopicCard({
 }
 
 export default function RoadmapPage() {
-  const { 
-    currentUserData, 
-    addMainTopic, 
-    renameMainTopic, 
-    deleteMainTopic, 
+  const {
+    currentUserData,
+    addMainTopic,
+    renameMainTopic,
+    deleteMainTopic,
     reorderMainTopics,
-    addSubTopic, 
-    updateSubTopic, 
+    addSubTopic,
+    updateSubTopic,
     deleteSubTopic,
     reorderSubTopics
   } = useAppContext();
-  
+
   const [open, setOpen] = useState("");
   const [newTopicName, setNewTopicName] = useState("");
   const [isAddingTopic, setIsAddingTopic] = useState(false);
 
   const roadmapData = currentUserData?.roadmap || { mainTopics: [], byCategory: {} };
   const mainTopics = roadmapData.mainTopics || [];
-  
+
   // Set default open section if none is open and there are topics
   useEffect(() => {
     if (!open && mainTopics.length > 0) {
@@ -469,7 +468,7 @@ export default function RoadmapPage() {
       reorderMainTopics(reorderedList);
     }
   };
-  
+
   const handleAddMainTopic = (e) => {
     e.preventDefault();
     if (newTopicName.trim()) {
@@ -487,34 +486,34 @@ export default function RoadmapPage() {
     >
       <div className="mb-8">
         {!isAddingTopic ? (
-           <button onClick={() => setIsAddingTopic(true)} className="btn-primary py-2 px-4 flex items-center gap-2">
-             <Plus className="w-4 h-4" /> New Main Topic
-           </button>
+          <button onClick={() => setIsAddingTopic(true)} className="btn-primary py-2 px-4 flex items-center gap-2">
+            <Plus className="w-4 h-4" /> New Main Topic
+          </button>
         ) : (
-           <form onSubmit={handleAddMainTopic} className="flex flex-wrap items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl max-w-xl">
-             <input
-               type="text"
-               value={newTopicName}
-               onChange={(e) => setNewTopicName(e.target.value)}
-               placeholder="e.g. Product Strategy, SQL, UX Design"
-               className="input-shell flex-1 min-w-[200px]"
-               autoFocus
-               required
-             />
-             <button type="submit" className="btn-primary py-2 px-4">Create</button>
-             <button type="button" onClick={() => setIsAddingTopic(false)} className="text-sm text-slate-500 hover:text-ink dark:hover:text-white px-2">Cancel</button>
-           </form>
+          <form onSubmit={handleAddMainTopic} className="flex flex-wrap items-center gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl max-w-xl">
+            <input
+              type="text"
+              value={newTopicName}
+              onChange={(e) => setNewTopicName(e.target.value)}
+              placeholder="e.g. Product Strategy, SQL, UX Design"
+              className="input-shell flex-1 min-w-[200px]"
+              autoFocus
+              required
+            />
+            <button type="submit" className="btn-primary py-2 px-4">Create</button>
+            <button type="button" onClick={() => setIsAddingTopic(false)} className="text-sm text-slate-500 hover:text-ink dark:hover:text-white px-2">Cancel</button>
+          </form>
         )}
       </div>
 
       <div className="space-y-4">
         {mainTopics.length === 0 ? (
-           <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-[32px] border border-dashed border-slate-300 dark:border-white/10">
-             <div className="text-4xl mb-4">🗺️</div>
-             <h3 className="text-lg font-semibold text-ink dark:text-white mb-2">Your roadmap is empty</h3>
-             <p className="text-slate-500 dark:text-slate-400 mb-6">Create your first Main Topic to start building your personal curriculum.</p>
-             <button onClick={() => setIsAddingTopic(true)} className="btn-primary py-2 px-6">Create Main Topic</button>
-           </div>
+          <div className="text-center py-20 bg-slate-50 dark:bg-slate-900/50 rounded-[32px] border border-dashed border-slate-300 dark:border-white/10">
+            <div className="text-4xl mb-4">🗺️</div>
+            <h3 className="text-lg font-semibold text-ink dark:text-white mb-2">Your roadmap is empty</h3>
+            <p className="text-slate-500 dark:text-slate-400 mb-6">Create your first Main Topic to start building your personal curriculum.</p>
+            <button onClick={() => setIsAddingTopic(true)} className="btn-primary py-2 px-6">Create Main Topic</button>
+          </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={mainTopics.map((t) => t.id)} strategy={verticalListSortingStrategy}>

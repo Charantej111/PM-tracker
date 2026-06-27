@@ -41,8 +41,9 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
    - Decoupled react-state rendering for latency-free typing.
 
 6. **Roadmap & Skills Self-Assessment**
-   - Mapped checklist categories for key PM knowledge areas (Analytics, Strategy, Technical, UX, etc.).
-   - Interactive competency sliders to rate and track skill level gains.
+   - **Hierarchical Roadmap**: Manage custom learning pathways using nested **Main Topics** and **Sub-topics** with support for drag-and-drop sorting (powered by `@dnd-kit`).
+   - **Progress & Tracking**: Set priorities, estimate study hours, write topic-specific rich notes, and mark topics complete.
+   - **Competency Ratings**: Rate and track competency levels (from Beginner to Expert) with responsive progress feedback.
 
 7. **Resources Library**
    - Bookmark-ready grid supporting custom course links (YouTube, Coursera, LinkedIn Learning).
@@ -125,6 +126,19 @@ Start the local Vite development server:
 npm run dev
 ```
 Open your browser and navigate to `http://localhost:5173`.
+
+### Run via Docker (Alternative)
+A `Dockerfile` and `docker-compose.yml` are provided for containerized local development.
+
+1. Build and start the services in the background:
+   ```bash
+   docker compose up -d
+   ```
+2. The application will be accessible at `http://localhost:5173`.
+3. To stop and clean up the containers:
+   ```bash
+   docker compose down
+   ```
 
 ### Build for Production
 To build the optimized static asset bundle:
