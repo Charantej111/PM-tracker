@@ -28,22 +28,10 @@ export const createDefaultUserData = (user = {}) => ({
   },
   planner: {
     [getTodayKey()]: {
-      morning: [
-        { id: generateId("task"), title: "Product Management lesson", completed: false },
-        { id: generateId("task"), title: "Write one user story", completed: false },
-      ],
-      afternoon: [
-        { id: generateId("task"), title: "Practice SQL joins", completed: false },
-        { id: generateId("task"), title: "Review funnel metrics", completed: false },
-      ],
-      evening: [
-        { id: generateId("task"), title: "Communication drills", completed: false },
-        { id: generateId("task"), title: "Presentation rehearsal", completed: false },
-      ],
-      night: [
-        { id: generateId("task"), title: "Case study outline", completed: false },
-        { id: generateId("task"), title: "Portfolio reflection", completed: false },
-      ],
+      morning: [],
+      afternoon: [],
+      evening: [],
+      night: [],
     },
   },
 

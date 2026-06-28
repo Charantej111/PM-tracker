@@ -41,8 +41,9 @@ The interface is crafted around a premium **white and royal blue** SaaS aestheti
    - Decoupled react-state rendering for latency-free typing.
 
 6. **Roadmap & Skills Self-Assessment**
-   - Mapped checklist categories for key PM knowledge areas (Analytics, Strategy, Technical, UX, etc.).
-   - Interactive competency sliders to rate and track skill level gains.
+   - **Hierarchical Roadmap**: Manage custom learning pathways using nested **Main Topics** and **Sub-topics** with support for drag-and-drop sorting (powered by `@dnd-kit`).
+   - **Progress & Tracking**: Set priorities, estimate study hours, write topic-specific rich notes, and mark topics complete.
+   - **Competency Ratings**: Rate and track competency levels (from Beginner to Expert) with responsive progress feedback.
 
 7. **Resources Library**
    - Bookmark-ready grid supporting custom course links (YouTube, Coursera, LinkedIn Learning).
@@ -126,6 +127,19 @@ npm run dev
 ```
 Open your browser and navigate to `http://localhost:5173`.
 
+### Run via Docker (Alternative)
+A `Dockerfile` and `docker-compose.yml` are provided for containerized local development.
+
+1. Build and start the services in the background:
+   ```bash
+   docker compose up -d
+   ```
+2. The application will be accessible at `http://localhost:5173`.
+3. To stop and clean up the containers:
+   ```bash
+   docker compose down
+   ```
+
 ### Build for Production
 To build the optimized static asset bundle:
 ```bash
@@ -135,7 +149,25 @@ The output files will be built inside the `/dist` directory, ready to be served.
 
 ---
 
-## 🌐 Netlify Deployment
-This application requires all routes to rewrite to `/index.html` so client-side routing works smoothly. The repo is configured out-of-the-box using two fallbacks:
+## 🌐 Deployment (Vercel & Netlify)
+
+This application is configured for seamless deployment on both **Vercel** and **Netlify**. Since it is a Single Page Application (SPA), all route requests must rewrite to `/index.html` so that client-side routing works smoothly.
+
+### Vercel Deployment
+The repository includes a `vercel.json` configuration file at the root to handle client-side routing rewrites automatically:
+```json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}
+```
+
+### Netlify Deployment
+For Netlify, client-side routing is handled out-of-the-box using two fallback methods:
 - `netlify.toml` at the project root.
 - `public/_redirects` copied directly into the `/dist` output folder.
+

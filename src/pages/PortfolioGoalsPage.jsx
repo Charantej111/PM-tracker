@@ -5,6 +5,7 @@ import Card from "../components/Card";
 import InputField from "../components/InputField";
 import PageShell from "../components/PageShell";
 import Slider from "../components/Slider";
+import EmptyState from "../components/EmptyState";
 import { useAppContext } from "../context/AppContext";
 import { formatShortDate } from "../utils/helpers";
 
@@ -141,27 +142,44 @@ export default function PortfolioGoalsPage() {
       )}
 
       {goals.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center p-8 text-center">
-          <p className="text-sm text-slate-500 dark:text-slate-400">No portfolio goals found.</p>
-        </Card>
+        <EmptyState
+          icon="🎯"
+          title="No goals yet"
+          description="Start planning your portfolio journey."
+          actionLabel="Create Goal"
+          onAction={() => setShowForm(true)}
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {goals.map((goal) => (
             <Card key={goal.id} className="flex flex-col">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-semibold text-ink dark:text-white line-clamp-1">{goal.title}</h3>
-                    {goal.priority === "High" && (
-                      <AlertCircle className="h-4 w-4 text-warning" />
-                    )}
+                <div className="flex-1 min-w-0">
+                  <div className="relative group min-w-0">
+                    <h3 className="text-xl font-semibold text-ink dark:text-white truncate cursor-help">
+                      {goal.title}
+                    </h3>
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 bg-slate-900 text-white text-xs rounded-xl py-1.5 px-3 max-w-xs shadow-lg whitespace-normal break-words dark:bg-white dark:text-slate-900 border border-slate-200/10 pointer-events-none">
+                      {goal.title}
+                    </div>
                   </div>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Due {formatShortDate(goal.deadline || goal.target_date)}
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold shrink-0 min-w-[70px] text-center border ${
+                      goal.priority === "High"
+                        ? "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950/50 dark:text-rose-200 dark:border-rose-800 font-bold"
+                        : goal.priority === "Low"
+                        ? "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/50 dark:text-emerald-200 dark:border-emerald-800 font-medium"
+                        : "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/50 dark:text-amber-200 dark:border-amber-800 font-medium"
+                    }`}>
+                      {goal.priority}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>Due {formatShortDate(goal.deadline || goal.target_date)}</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0">
                   <button
                     onClick={() => handleStartEdit(goal)}
                     className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-accent dark:hover:bg-slate-800"

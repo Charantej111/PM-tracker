@@ -86,3 +86,32 @@ Enable RLS on all tables and create a policy allowing users to `ALL` operations 
      to = "/index.html"
      status = 200
    ```
+
+---
+
+## 3. Vercel Deployment
+
+1. **Import Project**:
+   Import your repository into the Vercel dashboard.
+
+2. **Build Settings**:
+   Vercel automatically detects the Vite configuration:
+   - **Framework Preset**: `Vite` (default)
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+
+3. **Environment Variables**:
+   Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under your project's Environment Variables settings.
+
+4. **SPA Redirects**:
+   A `vercel.json` file is configured at the root to rewrite client-side routing queries:
+   ```json
+   {
+     "rewrites": [
+       {
+         "source": "/(.*)",
+         "destination": "/"
+       }
+     ]
+   }
+   ```

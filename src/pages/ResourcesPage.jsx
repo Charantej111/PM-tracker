@@ -111,7 +111,15 @@ export default function ResourcesPage() {
         </div>
       </Card>
 
-      {items.length ? (
+      {currentUserData.resources.length === 0 ? (
+        <EmptyState
+          icon="📚"
+          title="No resources added"
+          description="Save useful learning resources here."
+          actionLabel="Add Resource"
+          onAction={() => setShowAddForm(true)}
+        />
+      ) : items.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {items.map((resource) => (
             <Card key={resource.id}>

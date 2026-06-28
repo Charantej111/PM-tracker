@@ -65,6 +65,36 @@ function NotesPageContent() {
   const { currentUserData, saveNote, deleteNote } = useAppContext();
   const [search, setSearch] = useState("");
 
+  const [activeFormats, setActiveFormats] = useState({
+    bold: false,
+    italic: false,
+    list: false,
+  });
+
+  const updateActiveFormats = () => {
+    if (typeof document !== "undefined") {
+      setActiveFormats({
+        bold: document.queryCommandState("bold"),
+        italic: document.queryCommandState("italic"),
+        list: document.queryCommandState("insertUnorderedList"),
+      });
+    }
+  };
+
+  const handleExec = (command) => {
+    exec(command);
+    updateActiveFormats();
+  };
+
+  const handleNewNote = () => {
+    setSelectedId(null);
+    setDraft({ title: "", content: "<p>Start writing...</p>", tags: [], favorite: false });
+    setTagsInput("");
+    if (editorRef.current) {
+      editorRef.current.innerHTML = "<p>Start writing...</p>";
+    }
+  };
+
   if (!currentUserData) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -106,6 +136,7 @@ function NotesPageContent() {
         editorRef.current.innerHTML = "<p>Start writing...</p>";
       }
     }
+    updateActiveFormats();
   }, [selectedId, selectedNote]);
 
   const filteredNotes = useMemo(
@@ -206,8 +237,16 @@ function NotesPageContent() {
                   </div>
                 </button>
               ))
+            ) : currentUserData.notes?.length === 0 ? (
+              <EmptyState
+                icon="📝"
+                title="No notes yet"
+                description="Capture ideas, summaries, and learnings."
+                actionLabel="New Note"
+                onAction={handleNewNote}
+              />
             ) : (
-              <EmptyState title="No notes yet" description="Create your first PM note to build a reusable thinking system." />
+              <EmptyState title="No notes match" description="Try a different search query." />
             )}
           </div>
         </Card>
@@ -227,21 +266,53 @@ function NotesPageContent() {
               placeholder="pm, metrics, interview"
             />
             <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 dark:border-white/10 dark:bg-slate-950">
-              <button type="button" onClick={() => exec("bold")} className="rounded-xl p-2 hover:bg-white dark:hover:bg-white/10 transition">
+              <button
+                type="button"
+                onClick={() => handleExec("bold")}
+                className={`rounded-xl p-2 transition active:scale-95 ${
+                  activeFormats.bold
+                    ? "bg-accent text-white shadow-sm hover:bg-accent/90"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/10 dark:hover:text-slate-100"
+                }`}
+                title="Bold"
+              >
                 <Bold className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => exec("italic")} className="rounded-xl p-2 hover:bg-white dark:hover:bg-white/10 transition">
+              <button
+                type="button"
+                onClick={() => handleExec("italic")}
+                className={`rounded-xl p-2 transition active:scale-95 ${
+                  activeFormats.italic
+                    ? "bg-accent text-white shadow-sm hover:bg-accent/90"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/10 dark:hover:text-slate-100"
+                }`}
+                title="Italic"
+              >
                 <Italic className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => exec("insertUnorderedList")} className="rounded-xl p-2 hover:bg-white dark:hover:bg-white/10 transition">
+              <button
+                type="button"
+                onClick={() => handleExec("insertUnorderedList")}
+                className={`rounded-xl p-2 transition active:scale-95 ${
+                  activeFormats.list
+                    ? "bg-accent text-white shadow-sm hover:bg-accent/90"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/10 dark:hover:text-slate-100"
+                }`}
+                title="Bullet List"
+              >
                 <List className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 onClick={() => setDraft((previous) => ({ ...previous, favorite: !previous.favorite }))}
-                className={`rounded-xl p-2 transition ${draft.favorite ? "bg-warning/15 text-warning" : "hover:bg-white dark:hover:bg-white/10"}`}
+                className={`rounded-xl p-2 transition active:scale-95 ${
+                  draft.favorite
+                    ? "bg-accent text-white shadow-sm hover:bg-accent/90"
+                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-white/10 dark:hover:text-slate-100"
+                }`}
+                title="Favorite"
               >
-                <Star className={`h-4 w-4 ${draft.favorite ? "fill-warning" : ""}`} />
+                <Star className={`h-4 w-4 ${draft.favorite ? "fill-white" : ""}`} />
               </button>
             </div>
             
@@ -250,7 +321,10 @@ function NotesPageContent() {
               ref={editorRef}
               contentEditable
               suppressContentEditableWarning
-              className="min-h-[320px] rounded-[28px] border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700 outline-none focus:border-accent/25 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
+              onKeyUp={updateActiveFormats}
+              onMouseUp={updateActiveFormats}
+              onInput={updateActiveFormats}
+              className="note-editor-content min-h-[320px] rounded-[28px] border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-700 outline-none focus:border-accent/25 dark:border-white/10 dark:bg-slate-950 dark:text-slate-200"
             />
 
             <div className="flex flex-wrap gap-3">
