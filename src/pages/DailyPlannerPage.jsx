@@ -1,5 +1,5 @@
 import { Plus, Sparkles, Trash2, Edit2, Check, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import PageShell from "../components/PageShell";
@@ -7,10 +7,10 @@ import { useAppContext } from "../context/AppContext";
 import { getTodayKey, percent } from "../utils/helpers";
 
 const periods = [
-  { key: "morning", title: "Morning", subtitle: "Product Management" },
-  { key: "afternoon", title: "Afternoon", subtitle: "SQL / Data Analytics" },
-  { key: "evening", title: "Evening", subtitle: "Communication Skills" },
-  { key: "night", title: "Night", subtitle: "Projects / Case Studies" },
+  { key: "morning", title: "Morning", icon: "☀️" },
+  { key: "afternoon", title: "Afternoon", icon: "🌤️" },
+  { key: "evening", title: "Evening", icon: "🌆" },
+  { key: "night", title: "Night", icon: "🌙" },
 ];
 
 function PlannerTaskRow({ task, today, periodKey, updatePlannerTask, deletePlannerTask }) {
@@ -100,6 +100,24 @@ function PlannerTaskRow({ task, today, periodKey, updatePlannerTask, deletePlann
 export default function DailyPlannerPage() {
   const { currentUserData, updatePlannerTask, addPlannerTask, deletePlannerTask } = useAppContext();
 
+  const morningRef = useRef(null);
+  const afternoonRef = useRef(null);
+  const eveningRef = useRef(null);
+  const nightRef = useRef(null);
+
+  const inputRefs = {
+    morning: morningRef,
+    afternoon: afternoonRef,
+    evening: eveningRef,
+    night: nightRef,
+  };
+
+  const handleFocusInput = (periodKey) => {
+    if (inputRefs[periodKey]?.current) {
+      inputRefs[periodKey].current.focus();
+    }
+  };
+
   if (!currentUserData) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -149,29 +167,48 @@ export default function DailyPlannerPage() {
       <div className="grid gap-4 xl:grid-cols-2">
         {periods.map((period) => (
           <Card key={period.key}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-sm font-medium uppercase tracking-[0.2em] text-accent">{period.title}</div>
-                <h3 className="mt-2 text-xl font-semibold text-ink dark:text-white">{period.subtitle}</h3>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl select-none">{period.icon}</span>
+                <h3 className="text-lg font-bold text-ink dark:text-white leading-none">{period.title}</h3>
               </div>
               <div className="rounded-full bg-accent-soft/10 px-3 py-1 text-xs font-semibold text-accent">
                 {percent((plan[period.key] || []).filter((task) => task.completed).length, (plan[period.key] || []).length || 1)}%
               </div>
             </div>
-            <div className="mt-5 space-y-3">
-              {(plan[period.key] || []).map((task) => (
-                <PlannerTaskRow
-                  key={task.id}
-                  task={task}
-                  today={today}
-                  periodKey={period.key}
-                  updatePlannerTask={updatePlannerTask}
-                  deletePlannerTask={deletePlannerTask}
-                />
-              ))}
-            </div>
+
+            {(plan[period.key] || []).length === 0 ? (
+              <div
+                onClick={() => handleFocusInput(period.key)}
+                className="group mt-5 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200/80 p-6 text-center cursor-pointer hover:bg-slate-50/50 hover:border-accent/40 dark:border-white/10 dark:hover:bg-slate-900/30 transition duration-200"
+              >
+                <span className="text-2xl select-none group-hover:scale-110 transition-transform duration-200">{period.icon}</span>
+                <p className="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-350">No tasks yet</p>
+                <button
+                  type="button"
+                  className="mt-1 text-xs font-semibold text-accent hover:underline focus:outline-none"
+                >
+                  + Add your first task
+                </button>
+              </div>
+            ) : (
+              <div className="mt-5 space-y-3">
+                {(plan[period.key] || []).map((task) => (
+                  <PlannerTaskRow
+                    key={task.id}
+                    task={task}
+                    today={today}
+                    periodKey={period.key}
+                    updatePlannerTask={updatePlannerTask}
+                    deletePlannerTask={deletePlannerTask}
+                  />
+                ))}
+              </div>
+            )}
+
             <div className="mt-5 flex gap-3">
               <input
+                ref={inputRefs[period.key]}
                 value={drafts[period.key]}
                 onChange={(event) => setDrafts((previous) => ({ ...previous, [period.key]: event.target.value }))}
                 placeholder={`Add a ${period.title.toLowerCase()} task`}

@@ -6,6 +6,7 @@ import Button from "../components/Button";
 import InputField from "../components/InputField";
 import PageShell from "../components/PageShell";
 import Slider from "../components/Slider";
+import EmptyState from "../components/EmptyState";
 import { useAppContext } from "../context/AppContext";
 import { formatShortDate, normalizeUrl } from "../utils/helpers";
 
@@ -232,45 +233,55 @@ export default function ProjectsPage() {
         </Button>
       }
     >
-      <div className="grid gap-4 xl:grid-cols-3">
-        {columns.map((column) => (
-          <Card
-            key={column}
-            className="min-h-[520px]"
-            hover={false}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-ink dark:text-white">{column}</h3>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {currentUserData.projects.filter((project) => project.status === column).length} items
-                </p>
-              </div>
-              <div className="rounded-full bg-accent-soft/10 px-3 py-1 text-xs font-semibold text-accent">
-                {column}
-              </div>
-            </div>
-
-            <div
-              className="mt-5 space-y-4 rounded-[28px] border border-dashed border-slate-200/80 p-3 dark:border-white/10 min-h-[400px]"
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => onDrop(event, column)}
+      {currentUserData.projects.length === 0 ? (
+        <EmptyState
+          icon="📁"
+          title="No projects yet"
+          description="Track your work by creating your first project."
+          actionLabel="Add Project"
+          onAction={() => setShowAddForm(true)}
+        />
+      ) : (
+        <div className="grid gap-4 xl:grid-cols-3">
+          {columns.map((column) => (
+            <Card
+              key={column}
+              className="min-h-[520px]"
+              hover={false}
             >
-              {currentUserData.projects
-                .filter((project) => project.status === column)
-                .map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    updateProject={updateProject}
-                    deleteProject={deleteProject}
-                    onStartEdit={handleStartEdit}
-                  />
-                ))}
-            </div>
-          </Card>
-        ))}
-      </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-ink dark:text-white">{column}</h3>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    {currentUserData.projects.filter((project) => project.status === column).length} items
+                  </p>
+                </div>
+                <div className="rounded-full bg-accent-soft/10 px-3 py-1 text-xs font-semibold text-accent">
+                  {column}
+                </div>
+              </div>
+
+              <div
+                className="mt-5 space-y-4 rounded-[28px] border border-dashed border-slate-200/80 p-3 dark:border-white/10 min-h-[400px]"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => onDrop(event, column)}
+              >
+                {currentUserData.projects
+                  .filter((project) => project.status === column)
+                  .map((project) => (
+                    <ProjectCard
+                      key={project.id}
+                      project={project}
+                      updateProject={updateProject}
+                      deleteProject={deleteProject}
+                      onStartEdit={handleStartEdit}
+                    />
+                  ))}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Project Form Modal (Add / Edit) */}
       <AnimatePresence>

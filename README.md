@@ -149,7 +149,25 @@ The output files will be built inside the `/dist` directory, ready to be served.
 
 ---
 
-## 🌐 Netlify Deployment
-This application requires all routes to rewrite to `/index.html` so client-side routing works smoothly. The repo is configured out-of-the-box using two fallbacks:
+## 🌐 Deployment (Vercel & Netlify)
+
+This application is configured for seamless deployment on both **Vercel** and **Netlify**. Since it is a Single Page Application (SPA), all route requests must rewrite to `/index.html` so that client-side routing works smoothly.
+
+### Vercel Deployment
+The repository includes a `vercel.json` configuration file at the root to handle client-side routing rewrites automatically:
+```json
+{
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}
+```
+
+### Netlify Deployment
+For Netlify, client-side routing is handled out-of-the-box using two fallback methods:
 - `netlify.toml` at the project root.
 - `public/_redirects` copied directly into the `/dist` output folder.
+
