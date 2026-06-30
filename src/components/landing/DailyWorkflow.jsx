@@ -3,6 +3,7 @@ import { motion, useReducedMotion, useInView } from "framer-motion";
 import { useLandingStory } from "../landing-ui/LandingStoryContext";
 import { landingTokens } from "../landing-ui/designTokens";
 import { Sun, Moon, BookOpen, Briefcase, BarChart } from "lucide-react";
+import SectionBg from "./SectionBg";
 
 export const DailyWorkflow = () => {
   const { activePresetData } = useLandingStory();
@@ -61,7 +62,8 @@ export const DailyWorkflow = () => {
       id="chapter-workflow"
       className="py-28 relative overflow-hidden bg-white dark:bg-slate-950 transition-colors duration-300"
     >
-      <div className="max-w-7xl mx-auto px-6 space-y-12">
+      <SectionBg />
+      <div className="max-w-7xl mx-auto px-6 space-y-12 relative z-10">
 
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto space-y-4">

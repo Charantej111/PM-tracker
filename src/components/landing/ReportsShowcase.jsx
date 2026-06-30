@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ReportsPreview } from "../landing-ui/ReportsPreview";
 import { landingTokens } from "../landing-ui/designTokens";
 import { CheckCircle2 } from "lucide-react";
+import SectionBg from "./SectionBg";
 
 const FEATURES = [
   "Automatic compilation from daily study logs",
@@ -19,8 +20,7 @@ export const ReportsShowcase = () => {
       id="chapter-reports"
       className="py-28 relative overflow-hidden bg-white dark:bg-slate-950 transition-colors duration-300"
     >
-      {/* Ambient glow */}
-      <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full bg-blue-500/5 dark:bg-blue-600/5 blur-[120px] pointer-events-none" />
+      <SectionBg />
 
       <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-14 items-center relative z-10">
 

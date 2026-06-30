@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { landingTokens } from "../landing-ui/designTokens";
 import { CheckSquare, Compass, BarChart, GraduationCap, ArrowRight } from "lucide-react";
+import SectionBg from "./SectionBg";
 
 const STEPS = [
   { icon: CheckSquare,  label: "Check Planner Task",  desc: "Completes afternoon study session.", color: "text-blue-500", colorBg: "bg-blue-500/10" },
@@ -28,7 +29,8 @@ export const EverythingConnected = () => {
       id="chapter-connected"
       className="py-28 relative overflow-hidden bg-white dark:bg-slate-950 transition-colors duration-300"
     >
-      <div className="max-w-7xl mx-auto px-6 space-y-12">
+      <SectionBg />
+      <div className="max-w-7xl mx-auto px-6 space-y-12 relative z-10">
 
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto space-y-4">

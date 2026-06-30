@@ -9,6 +9,8 @@ import { PortfolioPreview } from "../landing-ui/PortfolioPreview";
 import { landingTokens }    from "../landing-ui/designTokens";
 import { Calendar, Compass, ListTodo, Presentation, LineChart } from "lucide-react";
 
+import SectionBg from "./SectionBg";
+
 const TABS = [
   { key: "plan",    label: "Plan",    icon: ListTodo,     subtitle: "Daily Planner"    },
   { key: "learn",   label: "Learn",   icon: Compass,      subtitle: "Learning Roadmap" },
@@ -38,7 +40,8 @@ export const WorkspaceShowcase = () => {
       id="chapter-showcase"
       className="py-28 relative overflow-hidden bg-slate-50 dark:bg-[#080c14] border-y border-slate-100 dark:border-white/5 transition-colors duration-300"
     >
-      <div className="max-w-7xl mx-auto px-6 space-y-12">
+      <SectionBg variant="gray" />
+      <div className="max-w-7xl mx-auto px-6 space-y-12 relative z-10">
 
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto space-y-4">

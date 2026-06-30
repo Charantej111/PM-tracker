@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { landingTokens } from "../landing-ui/designTokens";
 import { Target, Brain, Calendar, Code2, BarChart2, UserCheck } from "lucide-react";
+import SectionBg from "./SectionBg";
 
 const STEPS = [
   {
@@ -98,7 +99,8 @@ export const JourneySection = () => {
       id="chapter-journey"
       className="py-28 relative overflow-hidden bg-white dark:bg-slate-950 border-y border-slate-100 dark:border-white/5 transition-colors duration-300"
     >
-      <div className="max-w-7xl mx-auto px-6 space-y-16">
+      <SectionBg />
+      <div className="max-w-7xl mx-auto px-6 space-y-16 relative z-10">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="text-center max-w-2xl mx-auto space-y-4">

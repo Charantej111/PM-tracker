@@ -2,6 +2,7 @@ import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, Compass } from "lucide-react";
 import { landingTokens } from "../landing-ui/designTokens";
+import SectionBg from "./SectionBg";
 
 const TECH = ["React", "Supabase", "TailwindCSS", "Framer Motion", "Vercel"];
 
@@ -11,8 +12,7 @@ export const CTASection = () => {
 
   return (
     <footer className="relative overflow-hidden bg-white dark:bg-slate-950 border-t border-slate-200/50 dark:border-white/5 pt-20 pb-10 transition-colors duration-300">
-      {/* Ambient radial glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full bg-blue-500/8 dark:bg-blue-600/8 blur-[100px] pointer-events-none" />
+      <SectionBg />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10 flex flex-col gap-16">
 

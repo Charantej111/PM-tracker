@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { landingTokens } from "../landing-ui/designTokens";
 import { Brain, Cpu, MessageSquare, Briefcase } from "lucide-react";
+import SectionBg from "./SectionBg";
 
 const PHASES = [
   {
@@ -57,7 +58,7 @@ export const FutureRoadmap = () => {
       id="chapter-ai"
       className="py-28 relative overflow-hidden bg-[#030712] border-y border-white/5 transition-colors duration-300"
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-blue-700/10 blur-[130px] pointer-events-none" />
+      <SectionBg variant="dark-only" />
 
       <div className="max-w-7xl mx-auto px-6 space-y-12 relative z-10">
         <div className="text-center max-w-2xl mx-auto space-y-4">

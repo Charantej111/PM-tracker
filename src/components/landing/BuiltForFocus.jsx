@@ -7,6 +7,7 @@ import {
   FileCode, Monitor, CheckSquare, Layout, BarChart2,
   Award, Target, BookOpen, Activity
 } from "lucide-react";
+import SectionBg from "./SectionBg";
 
 // ─── Scattered tool items ───────────────────────────────────────────────────
 const TOOLS = [
@@ -47,10 +48,7 @@ export const BuiltForFocus = () => {
       id="chapter-focus"
       className="py-28 relative overflow-hidden bg-slate-50 dark:bg-[#080c14] border-y border-slate-100 dark:border-white/5 transition-colors duration-300"
     >
-      {/* Dark mode ambient glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] rounded-full bg-blue-600/4 dark:bg-blue-600/6 blur-[140px]" />
-      </div>
+      <SectionBg variant="gray" />
 
       <div className="max-w-7xl mx-auto px-6 space-y-14 relative z-10">
 
