@@ -10,21 +10,49 @@ import JourneySection from "../components/landing/JourneySection";
 import ReportsShowcase from "../components/landing/ReportsShowcase";
 import FutureRoadmap from "../components/landing/FutureRoadmap";
 import CTASection from "../components/landing/CTASection";
+import ScrollReveal from "../components/landing/ScrollReveal";
 
 export const LandingPage = () => {
   return (
     <LandingStoryProvider>
       <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-800 dark:text-white transition-colors duration-500 font-sans">
         <StickyNavbar />
+
+        {/* Hero — no reveal wrapper; it's above the fold */}
         <HeroSection />
-        <WorkspaceShowcase />
-        <DailyWorkflow />
-        <BuiltForFocus />
-        <EverythingConnected />
-        <JourneySection />
-        <ReportsShowcase />
-        <FutureRoadmap />
-        <CTASection />
+
+        {/* All downstream sections scroll-reveal in sequence */}
+        <ScrollReveal>
+          <WorkspaceShowcase />
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <DailyWorkflow />
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <BuiltForFocus />
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <EverythingConnected />
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <JourneySection />
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <ReportsShowcase />
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <FutureRoadmap />
+        </ScrollReveal>
+
+        <ScrollReveal>
+          <CTASection />
+        </ScrollReveal>
       </div>
     </LandingStoryProvider>
   );

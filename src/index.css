@@ -12,7 +12,18 @@
 }
 
 html {
+  /* scroll-behavior only — do NOT set overflow on html; doing so reroutes
+     browser scroll events to an internal html scroll container, causing
+     the "dead first scroll" bug where the first wheel event does nothing. */
   scroll-behavior: smooth;
+}
+
+body {
+  /* overflow-x:clip clips children without creating a new scroll container,
+     unlike overflow-x:hidden which would interfere with parallax and
+     position:fixed elements. */
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 body {

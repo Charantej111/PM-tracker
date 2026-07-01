@@ -33,7 +33,6 @@ import {
   StudyHoursBar,
   RoadmapCompletionBar,
 } from "../charts/ReportCharts";
-import { exportReportToPdf } from "../utils/pdfExport";
 import { average, formatDate, formatShortDate, formatReviewReflection } from "../utils/helpers";
 import ReportPrintView from "../components/ReportPrintView";
 
@@ -83,6 +82,7 @@ export default function ReportsPage() {
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
     try {
+      const { exportReportToPdf } = await import("../utils/pdfExport");
       await exportReportToPdf(reportType, currentUser, currentUserData);
     } catch (err) {
       console.error(err);

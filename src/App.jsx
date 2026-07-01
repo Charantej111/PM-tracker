@@ -27,6 +27,7 @@ const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const CalendarPage = lazy(() => import("./pages/CalendarPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
+const SupportPage = lazy(() => import("./pages/SupportPage"));
 
 const SuspenseWrapper = ({ children }) => (
   <Suspense
@@ -93,6 +94,25 @@ function ScrollToTop() {
 export default function App() {
   const location = useLocation();
   const { activeAchievementCelebration, dismissCelebration } = useAppContext();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      const prefetchRoutes = () => {
+        import("./pages/DashboardPage").catch(() => {});
+        import("./pages/DailyPlannerPage").catch(() => {});
+        import("./pages/RoadmapPage").catch(() => {});
+        import("./pages/ProjectsPage").catch(() => {});
+      };
+
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        window.requestIdleCallback(prefetchRoutes);
+      } else {
+        const timer = setTimeout(prefetchRoutes, 2500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [user]);
 
   console.log("PATH:", window.location.pathname);
   console.log("HASH:", window.location.hash);
@@ -103,6 +123,7 @@ export default function App() {
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route path="/" element={<SuspenseWrapper><LandingPage /></SuspenseWrapper>} />
+          <Route path="/support" element={<SuspenseWrapper><SupportPage /></SuspenseWrapper>} />
           <Route
             path="/login"
             element={
@@ -164,6 +185,7 @@ export default function App() {
             <Route path="settings" element={<SuspenseWrapper><SettingsPage /></SuspenseWrapper>} />
             <Route path="calendar" element={<SuspenseWrapper><CalendarPage /></SuspenseWrapper>} />
             <Route path="reports" element={<SuspenseWrapper><ReportsPage /></SuspenseWrapper>} />
+            <Route path="support" element={<SuspenseWrapper><SupportPage /></SuspenseWrapper>} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -1,5 +1,6 @@
 import { Bold, Italic, List, Save, Search, Star, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, Component } from "react";
+import DOMPurify from "dompurify";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import EmptyState from "../components/EmptyState";
@@ -127,7 +128,7 @@ function NotesPageContent() {
       
       // Update editor element ref directly to avoid react re-render cursor issues
       if (editorRef.current) {
-        editorRef.current.innerHTML = selectedNote.content || "<p></p>";
+        editorRef.current.innerHTML = DOMPurify.sanitize(selectedNote.content || "<p></p>");
       }
     } else {
       setDraft({ title: "", content: "<p>Start writing...</p>", tags: [], favorite: false });
@@ -156,7 +157,7 @@ function NotesPageContent() {
         throw new Error("Notes editor component is not fully loaded yet.");
       }
       
-      const htmlContent = editorRef.current.innerHTML;
+      const htmlContent = DOMPurify.sanitize(editorRef.current.innerHTML);
       const noteToSave = {
         ...draft,
         content: htmlContent,

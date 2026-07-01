@@ -67,6 +67,7 @@ export const db = {
     },
 
     async updateProject(id, updates) {
+      const userId = await getUserId();
       const payload = {};
       if (updates.title !== undefined) payload.name = updates.title;
       if (updates.notes !== undefined) payload.description = updates.notes;
@@ -81,16 +82,19 @@ export const db = {
       const { error } = await supabase
         .from("projects")
         .update(payload)
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
 
     async deleteProject(id) {
+      const userId = await getUserId();
       const { error } = await supabase
         .from("projects")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
@@ -142,6 +146,7 @@ export const db = {
     },
 
     async updateSkill(id, updates) {
+      const userId = await getUserId();
       const payload = {};
       if (updates.name !== undefined) payload.name = updates.name;
       if (updates.progress !== undefined) payload.progress = updates.progress;
@@ -151,16 +156,19 @@ export const db = {
       const { error } = await supabase
         .from("skills")
         .update(payload)
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
 
     async deleteSkill(id) {
+      const userId = await getUserId();
       const { error } = await supabase
         .from("skills")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
@@ -215,6 +223,7 @@ export const db = {
     },
 
     async updateTask(id, updates) {
+      const userId = await getUserId();
       const payload = {};
       if (updates.completed !== undefined) payload.completed = updates.completed;
       if (updates.title !== undefined) payload.title = updates.title;
@@ -225,16 +234,19 @@ export const db = {
       const { error } = await supabase
         .from("tasks")
         .update(payload)
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
 
     async deleteTask(id) {
+      const userId = await getUserId();
       const { error } = await supabase
         .from("tasks")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
@@ -292,6 +304,7 @@ export const db = {
     },
 
     async updateNote(id, updates) {
+      const userId = await getUserId();
       const payload = { updated_at: new Date().toISOString() };
       if (updates.title !== undefined) payload.title = updates.title;
       if (updates.content !== undefined) payload.content = updates.content;
@@ -303,16 +316,19 @@ export const db = {
       const { error } = await supabase
         .from("notes")
         .update(payload)
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
 
     async deleteNote(id) {
+      const userId = await getUserId();
       const { error } = await supabase
         .from("notes")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
@@ -446,11 +462,13 @@ export const db = {
       // rows: Array of { id, sort_order }
       // Requires multiple requests or a batch update RPC. Using multiple updates for now
       // since it's a small array.
+      const userId = await getUserId();
       for (const row of rows) {
          await supabase
           .from("roadmap_progress")
           .update({ sort_order: row.sort_order })
-          .eq("id", row.id);
+          .eq("id", row.id)
+          .eq("user_id", userId);
       }
     }
   },
@@ -513,6 +531,7 @@ export const db = {
     },
 
     async updateResource(id, updates) {
+      const userId = await getUserId();
       const payload = {};
       if (updates.title !== undefined) payload.title = updates.title;
       if (updates.category !== undefined) payload.category = updates.category;
@@ -526,16 +545,19 @@ export const db = {
       const { error } = await supabase
         .from("resources")
         .update(payload)
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
 
     async deleteResource(id) {
+      const userId = await getUserId();
       const { error } = await supabase
         .from("resources")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
@@ -592,10 +614,12 @@ export const db = {
     },
 
     async deleteReview(id) {
+      const userId = await getUserId();
       const { error } = await supabase
         .from("weekly_reviews")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
@@ -701,6 +725,7 @@ export const db = {
     },
 
     async updatePortfolioGoal(id, updates) {
+      const userId = await getUserId();
       const payload = {};
       if (updates.title !== undefined) payload.title = updates.title;
       if (updates.milestone !== undefined) payload.description = updates.milestone;
@@ -725,18 +750,103 @@ export const db = {
       const { error } = await supabase
         .from("portfolio_goals")
         .update(payload)
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
 
     async deletePortfolioGoal(id) {
+      const userId = await getUserId();
       const { error } = await supabase
         .from("portfolio_goals")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .eq("user_id", userId);
 
       if (error) throw error;
     },
   },
+
+  supportTickets: {
+    async createTicket(ticket) {
+      const { data, error } = await supabase
+        .rpc("submit_support_ticket", {
+          p_name: ticket.name,
+          p_email: ticket.email,
+          p_category: ticket.category,
+          p_subject: ticket.subject,
+          p_message: ticket.message,
+          p_metadata: ticket.metadata || {},
+          p_priority: ticket.priority || "normal"
+        })
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async uploadScreenshot(ticketId, file) {
+      const extension = file.name.split('.').pop() || 'png';
+      const filePath = `tickets/${ticketId}/screenshot.${extension}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("support-attachments")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { error: updateError } = await supabase
+        .from("support_tickets")
+        .update({ attachment_url: filePath })
+        .eq("id", ticketId);
+
+      if (updateError) throw updateError;
+      return filePath;
+    },
+
+    async getTickets() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+
+    async getAllTickets() {
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+
+    async updateTicketAdmin(ticketId, updates) {
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .update(updates)
+        .eq("id", ticketId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
+    async getAttachmentSignedUrl(filePath) {
+      const { data, error } = await supabase.storage
+        .from("support-attachments")
+        .createSignedUrl(filePath, 3600);
+
+      if (error) throw error;
+      return data.signedUrl;
+    }
+  }
 };

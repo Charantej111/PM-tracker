@@ -14,6 +14,7 @@ import {
   NotebookPen,
   Settings,
   UserCircle2,
+  HelpCircle,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "../utils/helpers";
@@ -33,6 +34,7 @@ const items = [
   { to: "/app/portfolio-goals", label: "Portfolio Goals", icon: Goal },
   { to: "/app/profile", label: "Profile", icon: UserCircle2 },
   { to: "/app/settings", label: "Settings", icon: Settings },
+  { to: "/app/support", label: "Help & Support", icon: HelpCircle },
 ];
 
 export default function Sidebar({ collapsed, mobile, onClose }) {

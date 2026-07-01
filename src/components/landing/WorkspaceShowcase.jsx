@@ -109,9 +109,9 @@ export const WorkspaceShowcase = () => {
             {/* Window chrome */}
             <div className="px-5 py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200/40 dark:border-white/5 flex items-center justify-between shrink-0">
               <div className="flex gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-800" />
-                <span className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-800" />
-                <span className="w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-800" />
+                <span className="w-3 h-3 rounded-full bg-[#ff5f57]" />
+                <span className="w-3 h-3 rounded-full bg-[#febc2e]" />
+                <span className="w-3 h-3 rounded-full bg-[#28c840]" />
               </div>
               <div className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                 {isPlaying ? (

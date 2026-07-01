@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, useRef, useCallback } from "react";
 import Confetti from "react-confetti";
 import { accentPalette, createDefaultUserData } from "../data/defaultData";
 import { computeRoadmapMetrics } from "../utils/roadmapMetrics";
@@ -21,6 +21,38 @@ import {
 } from "../utils/helpers";
 
 const AppContext = createContext(null);
+
+// Dev-telemetry helpers
+const requestTracker = new Set();
+const logDevApiRequest = (name) => {
+  if (import.meta.env.DEV) {
+    if (requestTracker.has(name)) {
+      console.warn(`[DevPerf] Duplicate API query detected in this session: ${name}`);
+    } else {
+      requestTracker.add(name);
+      console.log(`[DevPerf] API request dispatched: ${name}`);
+    }
+  }
+};
+
+const logSlowOperation = (name, startTime) => {
+  if (import.meta.env.DEV) {
+    const duration = performance.now() - startTime;
+    if (duration > 100) {
+      console.warn(`[DevPerf] Slow Operation: "${name}" took ${duration.toFixed(1)}ms (threshold 100ms)`);
+    }
+  }
+};
+
+export const useRenderCounter = (componentName) => {
+  const countRef = useRef(0);
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      countRef.current += 1;
+      console.log(`[DevPerf] [Render] <${componentName}> rendered ${countRef.current} times`);
+    }
+  });
+};
 
 const DATA_KEY = "pm-career-os-user-data";
 
@@ -242,9 +274,42 @@ export const AppProvider = ({ children }) => {
     document.documentElement.style.setProperty("--accent-soft", accent.soft);
   }, [metadataState?.settings?.accentColor, isDarkMode]);
 
-  const loadUserData = async (userId) => {
+  const loadUserData = async (userId, preloadedMetadata = null) => {
+    let startTime;
+    if (import.meta.env.DEV) {
+      startTime = performance.now();
+      logDevApiRequest("projects");
+      logDevApiRequest("skills");
+      logDevApiRequest("tasks");
+      logDevApiRequest("notes");
+      logDevApiRequest("roadmap_progress");
+      logDevApiRequest("reviews");
+      logDevApiRequest("resources");
+      logDevApiRequest("portfolio_goals");
+      logDevApiRequest("weekly_goals");
+      if (!preloadedMetadata) {
+        logDevApiRequest("profiles_metadata");
+      }
+    }
     try {
       const currentWeekStart = getWeekStartKey();
+      const queries = [
+        db.projects.getProjects(),
+        db.skills.getSkills(),
+        db.tasks.getTasks(),
+        db.notes.getNotes(),
+        db.roadmap.getRoadmapProgress(),
+        db.reviews.getReviews(),
+        db.resources.getResources(),
+        db.portfolioGoals.getPortfolioGoals(),
+        db.weeklyGoals.getWeeklyGoal(currentWeekStart),
+      ];
+
+      if (!preloadedMetadata) {
+        queries.push(supabase.from("profiles").select("metadata").eq("id", userId).maybeSingle());
+      }
+
+      const results = await Promise.all(queries);
       const [
         projData,
         skillsData,
@@ -256,18 +321,7 @@ export const AppProvider = ({ children }) => {
         pfGoalsData,
         weeklyGoalData,
         profData
-      ] = await Promise.all([
-        db.projects.getProjects(),
-        db.skills.getSkills(),
-        db.tasks.getTasks(),
-        db.notes.getNotes(),
-        db.roadmap.getRoadmapProgress(),
-        db.reviews.getReviews(),
-        db.resources.getResources(),
-        db.portfolioGoals.getPortfolioGoals(),
-        db.weeklyGoals.getWeeklyGoal(currentWeekStart),
-        supabase.from("profiles").select("metadata").eq("id", userId).maybeSingle()
-      ]);
+      ] = results;
 
       setProjectsState(projData || []);
       setSkillsState(skillsData || []);
@@ -279,8 +333,13 @@ export const AppProvider = ({ children }) => {
       setPortfolioGoalsState(pfGoalsData || []);
       setWeeklyGoalState(weeklyGoalData || { targetHours: 18, currentHours: 0, weekStart: currentWeekStart });
 
-      if (profData?.error) throw profData.error;
-      setMetadataState(profData?.data?.metadata || {});
+      if (preloadedMetadata) {
+        setMetadataState(preloadedMetadata || {});
+      } else {
+        if (profData?.error) throw profData.error;
+        setMetadataState(profData?.data?.metadata || {});
+      }
+      logSlowOperation("loadUserData", startTime);
     } catch (err) {
       console.error("Error loading user data:", err);
       showToast("Data Sync Error", "Could not synchronize with database: " + err.message, "error");
@@ -300,7 +359,7 @@ export const AppProvider = ({ children }) => {
 
       const currentMeta = prof?.metadata || {};
       if (currentMeta.migrated === true || localStorage.getItem("pm-career-os-migrated-" + userId) === "true") {
-        await loadUserData(userId);
+        await loadUserData(userId, currentMeta);
         return;
       }
 
@@ -678,10 +737,10 @@ export const AppProvider = ({ children }) => {
     });
   };
 
-  const updateMetadata = (nextValOrUpdater) => {
+  const updateMetadata = useCallback((nextValOrUpdater) => {
     if (!currentUser) return;
     setMetadataState((prev) => typeof nextValOrUpdater === "function" ? nextValOrUpdater(prev) : nextValOrUpdater);
-  };
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser || !metadataState || Object.keys(metadataState).length === 0) return;
@@ -718,7 +777,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [weeklyHours, weeklyGoalState?.targetHours, currentUser]);
 
-  const addNotification = (title, body) => {
+  const addNotification = useCallback((title, body) => {
     updateMetadata((prev) => {
       const updatedNotices = [
         {
@@ -736,21 +795,21 @@ export const AppProvider = ({ children }) => {
         notifications: updatedNotices,
       };
     });
-  };
+  }, [updateMetadata]);
 
-  const showToast = (title, description, variant = "default") => {
+  const showToast = useCallback((title, description, variant = "default") => {
     const id = generateId("toast");
     setToasts((previous) => [...previous, { id, title, description, variant }]);
     window.setTimeout(() => {
       setToasts((previous) => previous.filter((toast) => toast.id !== id));
     }, 3600);
-  };
+  }, []);
 
-  const triggerCelebration = (title, description = "Big momentum for your PM journey.") => {
+  const triggerCelebration = useCallback((title, description = "Big momentum for your PM journey.") => {
     setCelebration({ title, description });
     showToast(title, description, "success");
     window.setTimeout(() => setCelebration(null), 4200);
-  };
+  }, [showToast]);
 
   const updateProfile = (updates) => {
     showToast("Profile updated", "Your profile changes were saved.");
@@ -789,7 +848,7 @@ export const AppProvider = ({ children }) => {
     });
   };
 
-  const updatePlannerTask = async (date, period, taskId, updates) => {
+  const updatePlannerTask = useCallback(async (date, period, taskId, updates) => {
     const task = tasksState.find(t => t.id === taskId);
     if (!task) return;
     const prev = { ...task };
@@ -804,9 +863,9 @@ export const AppProvider = ({ children }) => {
       setTasksState(prevTasks => prevTasks.map(t => t.id === taskId ? prev : t));
       showToast("Sync Error", err.message, "error");
     }
-  };
+  }, [tasksState, showToast, logActivity]);
 
-  const addPlannerTask = async (date, period, title) => {
+  const addPlannerTask = useCallback(async (date, period, title) => {
     try {
       const newTask = await db.tasks.createTask({ title, completed: false, period, date });
       setTasksState(prev => [...prev, newTask]);
@@ -814,9 +873,9 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       showToast("Sync Error", err.message, "error");
     }
-  };
+  }, [showToast]);
 
-  const deletePlannerTask = async (taskId) => {
+  const deletePlannerTask = useCallback(async (taskId) => {
     const task = tasksState.find(t => t.id === taskId);
     if (!task) return;
 
@@ -829,7 +888,7 @@ export const AppProvider = ({ children }) => {
       setTasksState(prev => [...prev, task]);
       showToast("Sync Error", err.message, "error");
     }
-  };
+  }, [tasksState, showToast]);
 
   const addMainTopic = async (name) => {
     try {
@@ -1024,7 +1083,7 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const updateSkill = async (skillId, updates) => {
+  const updateSkill = useCallback(async (skillId, updates) => {
     const skill = skillsState.find(s => s.id === skillId);
     if (!skill) return;
     const prev = { ...skill };
@@ -1039,9 +1098,9 @@ export const AppProvider = ({ children }) => {
         showToast("Sync Error", err.message, "error");
       }
     }, 800);
-  };
+  }, [skillsState, showToast]);
 
-  const addSkill = async (skillData) => {
+  const addSkill = useCallback(async (skillData) => {
     try {
       const newSkill = await db.skills.createSkill(skillData);
       setSkillsState(prev => [...prev, newSkill]);
@@ -1049,9 +1108,9 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       showToast("Sync Error", err.message, "error");
     }
-  };
+  }, [showToast]);
 
-  const deleteSkill = async (skillId) => {
+  const deleteSkill = useCallback(async (skillId) => {
     const skill = skillsState.find(s => s.id === skillId);
     if (!skill) return;
     setSkillsState(prev => prev.filter(s => s.id !== skillId));
@@ -1062,7 +1121,7 @@ export const AppProvider = ({ children }) => {
       setSkillsState(prev => [...prev, skill]);
       showToast("Sync Error", err.message, "error");
     }
-  };
+  }, [skillsState, showToast]);
 
   const updateLearningItem = (itemId, updates) => {
     updateMetadata((prev) => {
@@ -1136,7 +1195,7 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const updateProject = async (projectId, updates, silent = false) => {
+  const updateProject = useCallback(async (projectId, updates, silent = false) => {
     const project = projectsState.find(p => p.id === projectId);
     if (!project) return;
     const prev = { ...project };
@@ -1159,9 +1218,9 @@ export const AppProvider = ({ children }) => {
         showToast("Sync Error", err.message, "error");
       }
     }, 800);
-  };
+  }, [projectsState, triggerCelebration, addNotification, showToast]);
 
-  const addProject = async (projectData) => {
+  const addProject = useCallback(async (projectData) => {
     try {
       const newProj = await db.projects.createProject({ progress: 0, status: "To Do", ...projectData });
       setProjectsState(prev => [...prev, newProj]);
@@ -1169,9 +1228,9 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       showToast("Sync Error", err.message, "error");
     }
-  };
+  }, [showToast]);
 
-  const deleteProject = async (projectId) => {
+  const deleteProject = useCallback(async (projectId) => {
     const project = projectsState.find(p => p.id === projectId);
     if (!project) return;
 
@@ -1184,7 +1243,7 @@ export const AppProvider = ({ children }) => {
       setProjectsState(prev => [...prev, project]);
       showToast("Sync Error", err.message, "error");
     }
-  };
+  }, [projectsState, showToast]);
 
   const createReview = async (payload) => {
     try {

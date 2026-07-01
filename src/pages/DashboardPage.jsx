@@ -8,11 +8,12 @@ import PageShell from "../components/PageShell";
 import ProgressRing from "../components/ProgressRing";
 import SkeletonCard from "../components/SkeletonCard";
 import StatCard from "../components/StatCard";
-import { useAppContext } from "../context/AppContext";
+import { useAppContext, useRenderCounter } from "../context/AppContext";
 import { MonthlyCompletionChart, SkillRadarChart, WeeklyStudyChart } from "../charts/AnalyticsCharts";
 import { average, formatShortDate, getTodayKey, percent } from "../utils/helpers";
 
 export default function DashboardPage() {
+  useRenderCounter("DashboardPage");
   const { currentUserData, dashboardMetrics, triggerCelebration, logActivity, ACHIEVEMENTS_LIST, updateGoal, showToast } = useAppContext();
   const [loading, setLoading] = useState(true);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);

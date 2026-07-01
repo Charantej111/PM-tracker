@@ -36,7 +36,7 @@ export const BuiltForFocus = () => {
   const [phase, setPhase] = useState("chaos");
   useEffect(() => {
     if (!isInView) { setPhase("chaos"); return; }
-    const id = setInterval(() => setPhase(p => p === "chaos" ? "unified" : "chaos"), 6000);
+    const id = setInterval(() => setPhase(p => p === "chaos" ? "unified" : "chaos"), 3000);
     return () => clearInterval(id);
   }, [isInView]);
 
@@ -90,8 +90,8 @@ export const BuiltForFocus = () => {
                   <motion.div
                     key={tool.label}
                     animate={unified && !shouldReduceMotion
-                      ? { opacity: 0.15, scale: 0.85, filter: "blur(2px)" }
-                      : { opacity: 1, scale: 1, filter: "blur(0px)" }
+                      ? { opacity: 0.18, scale: 0.85 }
+                      : { opacity: 1,    scale: 1    }
                     }
                     transition={{ type: "spring", stiffness: 120, damping: 16, delay: unified ? i * 0.03 : (11 - i) * 0.02 }}
                     className={`flex items-center gap-2 px-2.5 py-2 rounded-xl border shadow-sm ${tool.bg} ${tool.border}`}
@@ -105,32 +105,56 @@ export const BuiltForFocus = () => {
             </div>
           </div>
 
-          {/* ── CENTER: Flow connector ─────────────────────────────────────── */}
+          {/* ── CENTER: Doodle Flow connector ─────────────────────────────────── */}
           <div className="hidden lg:flex items-center justify-center">
             <svg viewBox="0 0 64 320" className="w-16 h-80" fill="none">
-              {/* Ghost path */}
-              <path d="M32 10 Q32 160 32 310" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 4" className="text-slate-200 dark:text-slate-800" />
-              {/* Animated path */}
-              <motion.path
-                d="M32 10 Q32 160 32 310"
-                stroke="#2563eb"
-                strokeWidth="2"
+              {/* Doodle Ghost path */}
+              <path
+                d="M 32 15 C 8 80, 56 100, 32 160 C 8 220, 56 240, 32 305"
+                stroke="currentColor"
+                strokeWidth="1.5"
                 strokeLinecap="round"
-                strokeDasharray="300"
-                animate={unified && !shouldReduceMotion ? { strokeDashoffset: 0, opacity: 1 } : { strokeDashoffset: 300, opacity: 0.2 }}
-                transition={{ duration: 1, ease: "easeInOut" }}
+                className="text-slate-200 dark:text-slate-800/60 opacity-60"
               />
-              {/* Traveling dot */}
+              {/* Doodle Animated path */}
+              <motion.path
+                d="M 32 15 C 8 80, 56 100, 32 160 C 8 220, 56 240, 32 305"
+                stroke="#2563eb"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={unified ? { pathLength: 1 } : { pathLength: 0 }}
+                transition={{ duration: 1.2, ease: "easeInOut" }}
+              />
+              {/* Traveling sketch dot */}
               {!shouldReduceMotion && (
                 <motion.circle
-                  cx="32" r="4" fill="#2563eb"
-                  animate={unified ? { cy: [10, 160, 310], opacity: [0, 1, 0] } : { cy: 10, opacity: 0 }}
+                  cx="32" r="3.5" fill="#2563eb"
+                  animate={unified ? { cy: [15, 160, 305], opacity: [0, 1, 0] } : { cy: 15, opacity: 0 }}
                   transition={unified ? { duration: 1.2, ease: "easeInOut", times: [0, 0.5, 1] } : {}}
                   className="drop-shadow-[0_0_6px_rgba(37,99,235,0.6)]"
                 />
               )}
-              {/* Arrow */}
-              <motion.path d="M25 298 L32 310 L39 298" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" fill="none" animate={unified ? { opacity: 1 } : { opacity: 0.15 }} />
+              {/* Left leg of caret arrowhead */}
+              <motion.path
+                d="M 23 295 C 27 299, 32 305, 32 305"
+                stroke="#2563eb"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={unified ? { pathLength: 1 } : { pathLength: 0 }}
+                transition={{ duration: 0.3, delay: unified ? 1.0 : 0, ease: "easeOut" }}
+              />
+              {/* Right leg of caret arrowhead */}
+              <motion.path
+                d="M 41 295 C 37 299, 32 305, 32 305"
+                stroke="#2563eb"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                initial={{ pathLength: 0 }}
+                animate={unified ? { pathLength: 1 } : { pathLength: 0 }}
+                transition={{ duration: 0.3, delay: unified ? 1.0 : 0, ease: "easeOut" }}
+              />
             </svg>
           </div>
 

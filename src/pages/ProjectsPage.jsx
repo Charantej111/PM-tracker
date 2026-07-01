@@ -7,7 +7,7 @@ import InputField from "../components/InputField";
 import PageShell from "../components/PageShell";
 import Slider from "../components/Slider";
 import EmptyState from "../components/EmptyState";
-import { useAppContext } from "../context/AppContext";
+import { useAppContext, useRenderCounter } from "../context/AppContext";
 import { formatShortDate, normalizeUrl } from "../utils/helpers";
 
 const columns = ["To Do", "In Progress", "Completed"];
@@ -141,6 +141,7 @@ function ProjectCard({ project, updateProject, deleteProject, onStartEdit }) {
 }
 
 export default function ProjectsPage() {
+  useRenderCounter("ProjectsPage");
   const { currentUserData, updateProject, addProject, deleteProject } = useAppContext();
 
   if (!currentUserData) {

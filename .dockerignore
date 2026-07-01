@@ -14,3 +14,8 @@ skills-lock.json
 auth-token-family-creation-time.txt
 locked-directories
 login-info.json
+.env
+.env.production
+.env.development
+.env.local
+.env*.local

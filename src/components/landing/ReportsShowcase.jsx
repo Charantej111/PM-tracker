@@ -68,9 +68,9 @@ export const ReportsShowcase = () => {
             {/* Window chrome */}
             <div className="px-5 py-3 bg-slate-50/80 dark:bg-slate-900/60 border-b border-slate-200/40 dark:border-white/5 flex items-center justify-between shrink-0">
               <div className="flex gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-800" />
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-800" />
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-200 dark:bg-slate-800" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e]" />
+                <span className="w-2.5 h-2.5 rounded-full bg-[#28c840]" />
               </div>
               <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">
                 Weekly Performance Report — June 2026

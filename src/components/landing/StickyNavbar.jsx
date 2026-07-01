@@ -127,6 +127,12 @@ export const StickyNavbar = () => {
               </button>
             );
           })}
+          <a
+            href="/support"
+            className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors duration-200"
+          >
+            Help
+          </a>
         </nav>
 
         {/* Desktop CTAs + Theme Toggle */}
@@ -193,6 +199,12 @@ export const StickyNavbar = () => {
               {label}
             </button>
           ))}
+          <a
+            href="/support"
+            className="text-left py-1 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            Help
+          </a>
           <div className="flex items-center gap-4 pt-3 border-t border-slate-200 dark:border-white/5">
             <a href="/login" className="text-sm font-bold text-slate-500 dark:text-slate-400">
               Sign In

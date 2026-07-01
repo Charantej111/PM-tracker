@@ -13,7 +13,7 @@ export default function HeroWindow({ step, tab, activePresetData, skill, readine
   return (
     <div
       className="relative bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-white/[0.07] rounded-[20px] overflow-hidden shadow-2xl shadow-slate-300/50 dark:shadow-black/50 backdrop-blur-sm"
-      style={noMotion ? {} : { transform: "perspective(1200px) rotateY(-3deg) rotateX(2deg)" }}
+      style={noMotion ? {} : { transform: "perspective(1200px) rotateX(2deg)" }}
     >
       {/* Top gradient strip */}
       <div className="h-[3px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
@@ -170,7 +170,7 @@ export default function HeroWindow({ step, tab, activePresetData, skill, readine
                   </div>
                   <div className="flex items-end gap-1.5 h-20">
                     {[35, 55, 40, 75, 60, 88, 50].map((v, i) => (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      <div key={i} className="flex-1 h-full flex flex-col justify-end items-center gap-1">
                         <motion.div
                           className="w-full rounded-t-lg bg-gradient-to-t from-blue-500/80 to-indigo-400/60"
                           initial={{ height: 0 }}
